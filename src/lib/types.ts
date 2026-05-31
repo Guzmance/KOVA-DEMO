@@ -1,5 +1,6 @@
 export interface Contact {
   id: number;
+  vertical: string;
   fn: string; ln: string; co: string; role: string;
   email: string; phone: string; status: string;
   score: number; city: string; deals: number;
@@ -8,7 +9,7 @@ export interface Contact {
   insight: string; action: string;
 }
 export interface Company {
-  id: number; name: string; industry: string;
+  id: number; vertical: string; name: string; industry: string;
   size: string; city: string; contacts: number;
   deals: number; revenue: string; since: string;
 }
