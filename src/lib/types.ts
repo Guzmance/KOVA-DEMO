@@ -22,5 +22,5 @@ export interface Activity {
   type: string; icon: string; bg: string;
   contact: string; text: string; time: string;
 }
-export type View = "dashboard"|"contacts"|"companies"|"deals"|"lists"|"reports"|"activity"|"pipeline";
+export type View = "dashboard"|"contacts"|"companies"|"deals"|"lists"|"pipeline"|"ask"|"reports"|"activity";
 export type Modal = null|"score"|"create"|"csv"|"settings";
