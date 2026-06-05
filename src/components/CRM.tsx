@@ -2,8 +2,11 @@
 import { useState, useRef, useEffect } from "react";
 import { CONTACTS, COMPANIES, ALL_DEALS, ALL_STAGES, ACTIVITIES, PIPELINE_STAGES, VERTICAL_CONFIG, ALL_VERTICALS } from "@/lib/data";
 import type { Contact, Company, Deal, View, Modal } from "@/lib/types";
+import QuoteBuilder from "@/components/QuoteBuilder";
+import DocumentCenter from "@/components/DocumentCenter";
+import AgentDocumentAssistant from "@/components/AgentDocumentAssistant";
 
-type ExtView = View | "pipeline" | "ask";
+type ExtView = View | "pipeline" | "ask" | "quotes" | "docs";
 
 export default function CRM() {
   const [vertId, setVertId]       = useState("real_estate");
@@ -13,6 +16,7 @@ export default function CRM() {
   const [selD, setSelD]           = useState<Deal|null>(null);
   const [selCo, setSelCo]         = useState<Company|null>(null);
   const [modal, setModal]         = useState<Modal>(null);
+  const [showDocAgent, setShowDocAgent] = useState(false);
   const [modalData, setModalData] = useState<any>(null);
   const [cFilter, setCFilter]     = useState("all");
   const [search, setSearch]       = useState("");
@@ -750,8 +754,8 @@ export default function CRM() {
     </div>
   );
 
-  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data"};
-  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","📋","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
+  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center"};
+  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#F8FAFC",fontFamily:"system-ui,-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
@@ -803,6 +807,7 @@ export default function CRM() {
           {["contacts","deals","lists"].includes(view)&&!selC&&!selD&&!selCo&&(
             <button onClick={()=>setModal("create")} style={{fontSize:11,padding:"5px 10px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,display:"flex",alignItems:"center",gap:3,fontWeight:600,cursor:"pointer"}}>+ Add</button>
           )}
+          <button onClick={()=>setShowDocAgent(true)} style={{fontSize:11,padding:"5px 10px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontWeight:700,cursor:"pointer"}}>✨ Build with Agent</button>
           <button onClick={()=>{setCsvStep(0);setModal("csv");}} style={{fontSize:11,padding:"5px 10px",background:"#F8FAFC",color:"#64748B",border:"1px solid #E2E8F0",borderRadius:6,fontWeight:600,cursor:"pointer"}}>↑ Import</button>
           <div style={{position:"relative"}}>
             <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:"none",border:"none",fontSize:17,cursor:"pointer",padding:"3px",color:"#64748B",position:"relative"}}>
@@ -834,6 +839,13 @@ export default function CRM() {
           {view==="activity"   && renderActivity()}
           {view==="pipeline"   && renderPipeline()}
           {view==="ask"        && renderAsk()}
+          {showDocAgent && (
+          <div onClick={()=>setShowDocAgent(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+            <div onClick={e=>e.stopPropagation()}><AgentDocumentAssistant vertId={vertId} onClose={()=>setShowDocAgent(false)} /></div>
+          </div>
+        )}
+        {view==="quotes"     && <QuoteBuilder vertId={vertId} onBack={()=>goView("dashboard")} />}
+          {view==="docs"        && <DocumentCenter vertId={vertId} />}
         </div>
       </div>
 

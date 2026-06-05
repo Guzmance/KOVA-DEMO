@@ -1,35 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { rateLimit } from "@/lib/rateLimit";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { callAI } from "@/lib/ai-adapter";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!rateLimit(ip)) {
-    return NextResponse.json({ error: "Too many requests. Try again later.", report: "Rate limit reached — please wait a few minutes." }, { status: 429 });
-  }
   try {
-    const { tenantName, vertical, leads, deals, tone } = await req.json();
-    const prompt = `Write a ${tone || "professional"} weekly intelligence report for ${tenantName} (${vertical} vertical).
-New leads this week: ${leads?.length || 0} | Active deals: ${deals?.length || 0}
-Total pipeline value: $${deals?.reduce((a: number, d: any) => a + (d.val || 0), 0).toLocaleString() || 0}
+    const { contacts, deals, vertical, companyName } = await req.json();
+    const system = `You are KOVA's Intelligence Agent. Write a sharp Monday morning briefing for ${companyName||"this business"}.
+Vertical: ${vertical}. Be specific. Reference real names and numbers. 3 sections: What's Working, What Needs Attention, This Week's Priority.`;
 
-Write a concise Monday morning briefing with these sections:
-1. Executive Summary (2-3 sentences)
-2. Top 3 Leads to Contact Today (with specific reasons)
-3. Pipeline Update (deals advancing or at risk)
-4. 3 Action Items for This Week
-
-Keep it under 300 words. Be specific, not generic.`;
-    const res = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
-      messages: [{ role: "user", content: prompt }],
+    const text = await callAI({
+      task: "report",
+      system,
+      messages: [{ role:"user", content: `Contacts: ${JSON.stringify(contacts?.slice(0,5))}. Deals: ${JSON.stringify(deals?.slice(0,5))}.` }],
+      maxTokens: 600,
     });
-    const report = (res.content[0] as any).text || "";
-    return NextResponse.json({ report });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ report: text });
+  } catch(e:any) {
+    return NextResponse.json({ error: e.message }, { status:500 });
   }
 }

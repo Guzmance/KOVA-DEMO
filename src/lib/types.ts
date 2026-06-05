@@ -22,5 +22,19 @@ export interface Activity {
   type: string; icon: string; bg: string;
   contact: string; text: string; time: string;
 }
-export type View = "dashboard"|"contacts"|"companies"|"deals"|"lists"|"pipeline"|"ask"|"reports"|"activity";
+export type View = "dashboard"|"contacts"|"companies"|"deals"|"lists"|"reports"|"activity";
 export type Modal = null|"score"|"create"|"csv"|"settings";
+
+// ── QUOTE TYPES ──────────────────────────────────────────────────────────────
+export interface QuoteLineItem {
+  id: string; description: string; qty: number; unit: string; price: number;
+}
+export interface Quote {
+  id: string; vertical: string; number: string; title: string;
+  contact: string; company: string; email: string;
+  status: "draft"|"sent"|"viewed"|"accepted"|"declined";
+  font: string; coverImage: string; accentColor: string;
+  intro: string; scope: string; terms: string;
+  lines: QuoteLineItem[]; tax: number;
+  created: string; validUntil: string; sentAt?: string;
+}

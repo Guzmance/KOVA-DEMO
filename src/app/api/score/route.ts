@@ -1,30 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { rateLimit } from "@/lib/rateLimit";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { callAI } from "@/lib/ai-adapter";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!rateLimit(ip)) {
-    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
-  }
   try {
-    const { record, vertical, tone, weights } = await req.json();
-    const prompt = `You are a ${tone || "professional"} business analyst scoring a ${vertical || "real_estate"} lead.
-Scoring weights: ${JSON.stringify(weights || {})}
-Lead record: ${JSON.stringify(record)}
-Return ONLY a JSON object (no markdown, no explanation):
-{"composite_score":<number 0-100>,"score_breakdown":{"Distress Index":<0-100>,"Equity Score":<0-100>,"Sellability":<0-100>,"Days Vacant":<0-100>,"Tax Delinquency":<0-100>},"ai_insight":"<2-3 sentence explanation>","recommended_action":"<specific next action>"}`;
-    const res = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
+    const { contact, vertical } = await req.json();
+    const system = `You are KOVA's AI Lead Scoring engine. Score this contact 0–100 across 4 dimensions.
+Vertical: ${vertical || "general"}.
+Return ONLY valid JSON — no markdown, no extra text:
+{"overall":0,"dimensions":{"fit":0,"intent":0,"timing":0,"value":0},"insight":"one sentence","action":"specific next step"}`;
+
+    const text = await callAI({
+      task: "scoring",
+      system,
+      messages: [{ role:"user", content: JSON.stringify(contact) }],
+      maxTokens: 300,
     });
-    const text = (res.content[0] as any).text || "{}";
-    const clean = text.replace(/```json|```/g, "").trim();
+
+    const clean = text.replace(/```json|```/g,"").trim();
     return NextResponse.json(JSON.parse(clean));
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch(e:any) {
+    return NextResponse.json({ error: e.message }, { status:500 });
   }
 }
