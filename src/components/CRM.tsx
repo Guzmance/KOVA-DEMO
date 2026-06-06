@@ -4,9 +4,11 @@ import { CONTACTS, COMPANIES, ALL_DEALS, ALL_STAGES, ACTIVITIES, PIPELINE_STAGES
 import type { Contact, Company, Deal, View, Modal } from "@/lib/types";
 import QuoteBuilder from "@/components/QuoteBuilder";
 import DocumentCenter from "@/components/DocumentCenter";
+import ContactDetail from "@/components/ContactDetail";
+import MapView from "@/components/MapView";
 import AgentDocumentAssistant from "@/components/AgentDocumentAssistant";
 
-type ExtView = View | "pipeline" | "ask" | "quotes" | "docs";
+type ExtView = View | "pipeline" | "ask" | "quotes" | "docs" | "map";
 
 export default function CRM() {
   const [vertId, setVertId]       = useState("real_estate");
@@ -17,6 +19,7 @@ export default function CRM() {
   const [selCo, setSelCo]         = useState<Company|null>(null);
   const [modal, setModal]         = useState<Modal>(null);
   const [showDocAgent, setShowDocAgent] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact|null>(null);
   const [modalData, setModalData] = useState<any>(null);
   const [cFilter, setCFilter]     = useState("all");
   const [search, setSearch]       = useState("");
@@ -457,6 +460,7 @@ export default function CRM() {
             </div>
           </div>
           <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{selC.role} · {selC.co}</div>
+          <button onClick={()=>{setSelectedContact(selC as any);}} style={{marginTop:6,padding:"5px 12px",background:P,color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer"}}>View Full Profile →</button>
           <div style={{fontSize:11,color:"#94A3B8",marginTop:4,fontStyle:"italic"}}>{live(selC.id)?.ai_insight||selC.notes}</div>
         </div>
       </div>
@@ -754,8 +758,8 @@ export default function CRM() {
     </div>
   );
 
-  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center"};
-  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
+  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center",map:"Contact Map"};
+  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["map","🗺️","Map"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#F8FAFC",fontFamily:"system-ui,-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
@@ -831,7 +835,6 @@ export default function CRM() {
 
         <div style={{flex:1,overflowY:"auto",padding:14}} onClick={()=>setVertOpen(false)}>
           {view==="dashboard"  && renderDashboard()}
-          {view==="contacts"   && renderContacts()}
           {view==="companies"  && renderCompanies()}
           {view==="deals"      && renderDeals()}
           {view==="lists"      && renderLists()}
@@ -844,8 +847,13 @@ export default function CRM() {
             <div onClick={e=>e.stopPropagation()}><AgentDocumentAssistant vertId={vertId} onClose={()=>setShowDocAgent(false)} /></div>
           </div>
         )}
+        {selectedContact && view==="contacts" && (
+          <ContactDetail contact={selectedContact} accentColor={P} onBack={()=>setSelectedContact(null)} />
+        )}
+        {!selectedContact && view==="contacts"  && renderContacts()}
         {view==="quotes"     && <QuoteBuilder vertId={vertId} onBack={()=>goView("dashboard")} />}
           {view==="docs"        && <DocumentCenter vertId={vertId} />}
+          {view==="map"         && <MapView vertId={vertId} />}
         </div>
       </div>
 
