@@ -34,6 +34,51 @@ const VERT_COLORS: Record<string,string> = {
   real_estate:"#00C896", healthcare:"#3B9EFF", manufacturing:"#A78BFA",
 };
 
+// Simplified continental US boundary [lat, lng] clockwise
+const US_BOUNDARY: [number,number][] = [
+  // Pacific coast south
+  [48.5,-124.7],[47.3,-124.6],[46.3,-124.1],[44.6,-124.5],[42.0,-124.5],
+  [40.4,-124.4],[38.9,-123.7],[37.8,-122.5],[36.6,-121.9],[35.7,-121.2],
+  [34.4,-120.5],[34.0,-119.0],[33.4,-117.9],[32.7,-117.2],
+  // US-Mexico border
+  [32.5,-117.1],[32.5,-114.8],[31.3,-111.0],[31.3,-108.2],[31.8,-106.4],
+  [29.8,-104.5],[29.0,-102.8],[28.0,-100.0],[27.8,-97.4],[26.1,-97.2],
+  // Texas Gulf coast
+  [26.6,-97.2],[27.9,-97.0],[28.3,-96.6],[29.0,-95.4],[29.4,-94.9],
+  [29.9,-93.9],[30.2,-89.8],
+  // Mississippi/Alabama/Florida panhandle
+  [30.5,-88.4],[30.3,-87.5],[30.5,-87.2],[30.2,-85.6],
+  [29.9,-85.0],[29.7,-84.0],
+  // Florida peninsula
+  [29.6,-83.1],[28.0,-82.7],[26.7,-82.3],[25.9,-81.8],[25.1,-80.9],
+  [25.1,-80.3],[25.8,-80.1],[26.4,-80.1],[27.6,-80.4],
+  // Atlantic coast north
+  [30.7,-81.5],[32.0,-81.2],[33.5,-78.7],[34.3,-77.8],
+  [35.2,-75.5],[36.5,-75.8],[37.0,-76.0],[37.5,-75.6],
+  [38.0,-75.2],[38.5,-74.9],[39.3,-74.6],[40.5,-73.8],
+  [41.0,-72.0],[41.5,-71.4],[42.0,-70.1],
+  // New England coast
+  [43.0,-70.6],[43.6,-70.2],[44.3,-68.2],[44.8,-67.0],[45.0,-67.1],
+  // Northeast border / Maine to Great Lakes
+  [47.4,-69.2],[47.5,-69.8],[45.0,-71.5],[45.0,-74.7],
+  [44.8,-75.3],[43.6,-76.2],[43.5,-76.5],
+  // Great Lakes south shore (Erie/Ontario)
+  [42.9,-79.0],[42.8,-79.3],[42.5,-82.5],[42.1,-83.1],
+  [41.7,-83.5],[41.7,-84.8],[41.8,-84.8],
+  // Michigan lower peninsula (simplified)
+  [43.6,-83.1],[44.1,-83.4],[44.5,-83.5],
+  [45.3,-84.7],[45.5,-84.5],[45.9,-84.8],[46.1,-84.2],
+  // Michigan UP / Wisconsin / Minnesota
+  [46.5,-84.5],[46.7,-84.0],[46.5,-84.9],
+  [46.5,-87.5],[47.5,-88.4],[47.5,-90.2],
+  [46.7,-92.2],[47.0,-92.1],[48.0,-91.5],
+  [48.2,-90.0],[48.0,-89.5],
+  // Minnesota north, 49th parallel west
+  [48.3,-93.3],[49.0,-95.2],[49.0,-97.0],
+  [49.0,-104.0],[49.0,-110.0],[49.0,-116.5],[49.0,-120.0],
+  [48.5,-124.7],
+];
+
 export default function MapView({ vertId, onSelectContact }:{ vertId:string; onSelectContact?:(c:any)=>void }) {
   const [filter, setFilter]   = useState<"all"|"company"|"contact">("all");
   const [vertFilter, setVertFilter] = useState<string>("all");
@@ -102,6 +147,17 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
         {[0.2,0.4,0.6,0.8].map(p=>(
           <div key={"v"+p} style={{position:"absolute",left:`${p*100}%`,top:0,bottom:0,width:1,background:"rgba(255,255,255,0.04)"}} />
         ))}
+
+        {/* US outline */}
+        <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} overflow="visible">
+          <polygon
+            points={US_BOUNDARY.map(([lat,lng])=>{ const p=project(lat,lng,mapW,mapH); return `${p.x},${p.y}`; }).join(" ")}
+            fill="rgba(255,255,255,0.04)"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
 
         {/* Location dots */}
         {filtered.map(loc => {
