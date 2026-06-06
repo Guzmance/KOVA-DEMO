@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CONTACTS, COMPANIES, VERTICAL_CONFIG } from "@/lib/data";
 
 // Geocoded locations for demo companies and contacts
@@ -41,6 +41,18 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
   const [selected, setSelected] = useState<typeof LOCATIONS[0]|null>(null);
   const [mapW, setMapW] = useState(720);
   const [mapH, setMapH] = useState(420);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const { width } = entries[0].contentRect;
+      if (width > 0) { setMapW(width); setMapH(Math.round(width * 0.42)); }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const filtered = LOCATIONS.filter(l => {
     if(filter !== "all" && l.type !== filter) return false;
@@ -82,7 +94,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
       </div>
 
       {/* Map area */}
-      <div style={{position:"relative",background:"#0F172A",borderRadius:12,overflow:"hidden",height:mapH,marginBottom:10}}>
+      <div ref={containerRef} style={{position:"relative",background:"#0F172A",borderRadius:12,overflow:"hidden",height:mapH,marginBottom:10}}>
         {/* Grid lines */}
         {[0.2,0.4,0.6,0.8].map(p=>(
           <div key={"h"+p} style={{position:"absolute",top:`${p*100}%`,left:0,right:0,height:1,background:"rgba(255,255,255,0.04)"}} />
