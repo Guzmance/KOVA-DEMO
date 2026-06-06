@@ -20,6 +20,7 @@ export default function CRM() {
   const [modal, setModal]         = useState<Modal>(null);
   const [showDocAgent, setShowDocAgent] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact|null>(null);
+  const [contactsView, setContactsView] = useState<"list"|"map">("list");
   const [modalData, setModalData] = useState<any>(null);
   const [cFilter, setCFilter]     = useState("all");
   const [search, setSearch]       = useState("");
@@ -416,11 +417,16 @@ export default function CRM() {
           <button key={f} onClick={()=>setCFilter(f)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:"1px solid",borderColor:cFilter===f?P:"#E2E8F0",background:cFilter===f?P+"15":"#fff",color:cFilter===f?P:"#64748B",cursor:"pointer"}}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>
         ))}
         <span style={{fontSize:10,color:"#94A3B8",flex:1}}>{filteredContacts.length} contacts</span>
+        <div style={{display:"flex",background:"#F1F5F9",borderRadius:7,padding:2,gap:1}}>
+          <button onClick={()=>setContactsView("list")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="list"?"#fff":"transparent",color:contactsView==="list"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="list"?600:400}}>☰ List</button>
+          <button onClick={()=>setContactsView("map")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="map"?"#fff":"transparent",color:contactsView==="map"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="map"?600:400}}>🗺 Map</button>
+        </div>
         <button onClick={scoreAll} disabled={scoringAll} style={{fontSize:11,padding:"4px 12px",background:scoringAll?P+"10":"#0F172A",color:scoringAll?P:"#fff",border:scoringAll?`1px solid ${P}44`:"none",borderRadius:7,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
           {scoringAll?<><span style={{animation:"kspin 1s linear infinite",display:"inline-block"}}>⟳</span> {scoreAllIdx}/{contacts.length}</>:scoreAllDone?"✓ All Scored":"🧠 Score All"}
         </button>
       </div>
-      {filteredContacts.map(c=>(
+      {contactsView==="map" && <MapView vertId={vertId} />}
+      {contactsView==="list" && filteredContacts.map(c=>(
         <div key={c.id} onClick={()=>setSelC(c)} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 4px",borderBottom:"1px solid #F1F5F9",cursor:"pointer"}}>
           <div style={{width:28,height:28,borderRadius:"50%",background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:P,flexShrink:0}}>{ini(c.fn,c.ln)}</div>
           <div style={{flex:1,minWidth:0}}>
@@ -436,7 +442,7 @@ export default function CRM() {
           </div>
         </div>
       ))}
-      {scoreAllDone&&(
+      {contactsView==="list" && scoreAllDone&&(
         <div style={{marginTop:10,padding:"10px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8,fontSize:12,color:"#15803D",fontWeight:600}}>
           ✓ All {contacts.length} contacts scored by Claude — click any score ring to see the full breakdown
         </div>
@@ -758,8 +764,8 @@ export default function CRM() {
     </div>
   );
 
-  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center",map:"Contact Map"};
-  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["map","🗺️","Map"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
+  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center"};
+  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#F8FAFC",fontFamily:"system-ui,-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
@@ -853,7 +859,6 @@ export default function CRM() {
         {!selectedContact && view==="contacts"  && renderContacts()}
         {view==="quotes"     && <QuoteBuilder vertId={vertId} onBack={()=>goView("dashboard")} />}
           {view==="docs"        && <DocumentCenter vertId={vertId} />}
-          {view==="map"         && <MapView vertId={vertId} />}
         </div>
       </div>
 
