@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useToast, ToastContainer } from "@/components/ui/toast";
 
 const LOCATIONS = [
   { id:"c1", type:"company", name:"Apex Realty Group",        industry:"Residential Brokerage",  vertical:"real_estate",   lat:25.7617, lng:-80.1918, city:"Miami, FL",       revenue:"$2.4M",  contacts:3, deals:4 },
@@ -22,13 +23,17 @@ const VERT_COLORS: Record<string,string> = {
   real_estate:"#00C896", healthcare:"#3B9EFF", manufacturing:"#A78BFA",
 };
 
-export default function MapView({ vertId, onSelectContact }:{ vertId:string; onSelectContact?:(c:any)=>void }) {
+type Loc = typeof LOCATIONS[0];
+
+export default function MapView({ vertId, onSelectContact }:{ vertId:string; onSelectContact?:(c:Loc)=>void }) {
   const [filter, setFilter]         = useState<"all"|"company"|"contact">("all");
   const [vertFilter, setVertFilter] = useState<string>("all");
   const [leafletReady, setLeafletReady] = useState(false);
-  const mapDivRef    = useRef<HTMLDivElement>(null);
-  const leafletMap   = useRef<any>(null);
-  const markers      = useRef<any[]>([]);
+  const [selected, setSelected]     = useState<Loc|null>(null);
+  const { toast, toasts, dismiss }  = useToast();
+  const mapDivRef  = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<any>(null);
+  const markers    = useRef<any[]>([]);
 
   const filtered = LOCATIONS.filter(l => {
     if (filter !== "all" && l.type !== filter) return false;
@@ -38,7 +43,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
   const companies = filtered.filter(l => l.type === "company");
   const contacts  = filtered.filter(l => l.type === "contact");
 
-  // Step 1 — load Leaflet CSS + JS from CDN once
+  // Load Leaflet CSS + JS from CDN once
   useEffect(() => {
     if ((window as any).L) { setLeafletReady(true); return; }
     if (!document.getElementById("leaflet-css")) {
@@ -53,7 +58,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
     document.head.appendChild(script);
   }, []);
 
-  // Step 2 — initialize map once Leaflet is ready
+  // Initialize map once Leaflet is ready
   useEffect(() => {
     if (!leafletReady || !mapDivRef.current || leafletMap.current) return;
     const L = (window as any).L;
@@ -66,39 +71,51 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
     return () => { map.remove(); leafletMap.current = null; };
   }, [leafletReady]);
 
-  // Step 3 — sync markers whenever map or filters change
+  // Sync markers whenever map or filters change
   useEffect(() => {
     const L = (window as any).L;
     const map = leafletMap.current;
     if (!L || !map) return;
 
-    markers.current.forEach(m => m.remove());
-    markers.current = [];
-
-    filtered.forEach(loc => {
-      const color = VERT_COLORS[loc.vertical] || "#94A3B8";
-      const isCompany = loc.type === "company";
-      const marker = L.circleMarker([loc.lat, loc.lng], {
-        radius: isCompany ? 11 : 7,
-        fillColor: color,
-        color: "rgba(255,255,255,0.55)",
-        weight: 2,
-        fillOpacity: 0.85,
+    const addMarkers = () => {
+      markers.current.forEach(m => m.remove());
+      markers.current = [];
+      filtered.forEach(loc => {
+        const color = VERT_COLORS[loc.vertical] || "#94A3B8";
+        const isCompany = loc.type === "company";
+        const marker = L.circleMarker([loc.lat, loc.lng], {
+          radius: isCompany ? 11 : 7,
+          fillColor: color,
+          color: "rgba(255,255,255,0.55)",
+          weight: 2,
+          fillOpacity: 0.85,
+        });
+        marker.bindPopup(`
+          <div style="font-family:system-ui,-apple-system,sans-serif;padding:2px;min-width:170px">
+            <div style="font-size:13px;font-weight:700;color:#0F172A;margin-bottom:3px">${loc.name}</div>
+            <div style="font-size:11px;color:#64748B;margin-bottom:6px">${loc.industry} · ${loc.city}</div>
+            <span style="font-size:14px;font-weight:700;color:${color}">${loc.revenue}</span>
+            <span style="font-size:10px;color:#94A3B8;margin-left:8px">${isCompany ? `${loc.contacts} contacts · ` : ""}${loc.deals} deals</span>
+          </div>`, { maxWidth:240 });
+        marker.on("click", () => setSelected(loc));
+        try { marker.addTo(map); } catch { return; }
+        markers.current.push(marker);
       });
-      marker.bindPopup(`
-        <div style="font-family:system-ui,-apple-system,sans-serif;padding:2px;min-width:170px">
-          <div style="font-size:13px;font-weight:700;color:#0F172A;margin-bottom:3px">${loc.name}</div>
-          <div style="font-size:11px;color:#64748B;margin-bottom:6px">${loc.industry} · ${loc.city}</div>
-          <span style="font-size:14px;font-weight:700;color:${color}">${loc.revenue}</span>
-          <span style="font-size:10px;color:#94A3B8;margin-left:8px">${isCompany ? `${loc.contacts} contacts · ` : ""}${loc.deals} deals</span>
-        </div>`, { maxWidth:240 });
-      marker.addTo(map);
-      markers.current.push(marker);
-    });
+    };
+
+    // Guard: wait until the map is fully initialized before placing markers
+    if ((map as any)._loaded) {
+      addMarkers();
+    } else {
+      map.once("load", addMarkers);
+    }
   }, [leafletReady, filter, vertFilter]);
+
+  const color = selected ? VERT_COLORS[selected.vertical] || "#94A3B8" : "#94A3B8";
 
   return (
     <div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div>
@@ -119,15 +136,15 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
       {/* Vertical filter */}
       <div style={{display:"flex",gap:4,marginBottom:10}}>
         <button onClick={()=>setVertFilter("all")} style={{fontSize:10,padding:"3px 10px",borderRadius:99,border:`1px solid ${vertFilter==="all"?"#0F172A":"#E2E8F0"}`,background:vertFilter==="all"?"#0F172A":"#fff",color:vertFilter==="all"?"#fff":"#64748B",cursor:"pointer"}}>All Verticals</button>
-        {([ ["real_estate","Real Estate","#00C896"], ["healthcare","Healthcare","#3B9EFF"], ["manufacturing","Manufacturing","#A78BFA"] ] as [string,string,string][]).map(([id,label,color])=>(
-          <button key={id} onClick={()=>setVertFilter(id)} style={{fontSize:10,padding:"3px 10px",borderRadius:99,border:`1px solid ${vertFilter===id?color:"#E2E8F0"}`,background:vertFilter===id?color+"20":"#fff",color:vertFilter===id?color:"#64748B",cursor:"pointer",fontWeight:vertFilter===id?600:400}}>
-            <span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:color,marginRight:4,verticalAlign:"middle"}} />{label}
+        {([ ["real_estate","Real Estate","#00C896"], ["healthcare","Healthcare","#3B9EFF"], ["manufacturing","Manufacturing","#A78BFA"] ] as [string,string,string][]).map(([id,label,col])=>(
+          <button key={id} onClick={()=>setVertFilter(id)} style={{fontSize:10,padding:"3px 10px",borderRadius:99,border:`1px solid ${vertFilter===id?col:"#E2E8F0"}`,background:vertFilter===id?col+"20":"#fff",color:vertFilter===id?col:"#64748B",cursor:"pointer",fontWeight:vertFilter===id?600:400}}>
+            <span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:col,marginRight:4,verticalAlign:"middle"}} />{label}
           </button>
         ))}
       </div>
 
       {/* Map container */}
-      <div style={{borderRadius:12,overflow:"hidden",height:440,marginBottom:12,position:"relative",background:"#0F172A"}}>
+      <div style={{borderRadius:12,overflow:"hidden",height:400,marginBottom:12,position:"relative",background:"#0F172A"}}>
         {!leafletReady && (
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.35)",fontSize:13,zIndex:1}}>
             Loading map…
@@ -136,11 +153,36 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
         <div ref={mapDivRef} style={{height:"100%",width:"100%"}} />
       </div>
 
+      {/* Selected record card */}
+      {selected && (
+        <div style={{background:"#fff",border:`1.5px solid ${color}44`,borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",gap:12,alignItems:"center"}}>
+          <div style={{width:40,height:40,borderRadius:selected.type==="company"?8:"50%",background:color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color,flexShrink:0}}>
+            {selected.type==="company"?selected.name[0]:"👤"}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{selected.name}</div>
+            <div style={{fontSize:11,color:"#64748B",marginTop:1}}>{selected.industry} · {selected.city}</div>
+            <div style={{display:"flex",gap:8,marginTop:3}}>
+              <span style={{fontSize:11,fontWeight:700,color}}>{selected.revenue}</span>
+              {selected.type==="company" && <span style={{fontSize:10,color:"#94A3B8"}}>{selected.contacts} contacts</span>}
+              <span style={{fontSize:10,color:"#94A3B8"}}>{selected.deals} deals</span>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:5,flexShrink:0}}>
+            <button onClick={()=>onSelectContact?.(selected)} style={{fontSize:11,padding:"5px 11px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600}}>
+              {selected.type==="contact"?"View Contact":"View Company"}
+            </button>
+            <button onClick={()=>toast(`Deal created for ${selected.name}`)} style={{fontSize:11,padding:"5px 11px",background:color+"15",color,border:`1px solid ${color}44`,borderRadius:6,cursor:"pointer",fontWeight:600}}>+ Deal</button>
+            <button onClick={()=>setSelected(null)} style={{fontSize:11,padding:"5px 8px",background:"#F8FAFC",color:"#94A3B8",border:"1px solid #E2E8F0",borderRadius:6,cursor:"pointer"}}>✕</button>
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
       <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
-        {([ ["real_estate","Real Estate","#00C896"], ["healthcare","Healthcare","#3B9EFF"], ["manufacturing","Manufacturing","#A78BFA"] ] as [string,string,string][]).map(([id,label,color])=>(
+        {([ ["real_estate","Real Estate","#00C896"], ["healthcare","Healthcare","#3B9EFF"], ["manufacturing","Manufacturing","#A78BFA"] ] as [string,string,string][]).map(([id,label,col])=>(
           <div key={id} style={{display:"flex",alignItems:"center",gap:5}}>
-            <div style={{width:10,height:10,borderRadius:"50%",background:color,border:"1.5px solid rgba(255,255,255,0.3)"}} />
+            <div style={{width:10,height:10,borderRadius:"50%",background:col,border:"1.5px solid rgba(255,255,255,0.3)"}} />
             <span style={{fontSize:11,color:"#64748B"}}>{label}</span>
           </div>
         ))}
@@ -164,8 +206,14 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
             else acc[loc.city].contacts++;
             return acc;
           }, {} as Record<string,{companies:number,contacts:number,deals:number}>)
-        ).sort((a,b) => (b[1].companies+b[1].contacts)-(a[1].companies+a[1].contacts)).map(([city,data]) => (
-          <div key={city} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:"1px solid #F8FAFC"}}>
+        ).sort((a,b)=>(b[1].companies+b[1].contacts)-(a[1].companies+a[1].contacts)).map(([city,data])=>(
+          <div key={city}
+            onClick={()=>{
+              const loc = filtered.find(l=>l.city===city);
+              if(loc) setSelected(loc);
+            }}
+            style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:"1px solid #F8FAFC",cursor:"pointer"}}
+          >
             <span style={{fontSize:12,fontWeight:600,color:"#0F172A",flex:1}}>📍 {city}</span>
             {data.companies>0 && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F1F5F9",color:"#64748B"}}>{data.companies} {data.companies===1?"company":"companies"}</span>}
             {data.contacts>0  && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F1F5F9",color:"#64748B"}}>{data.contacts} {data.contacts===1?"contact":"contacts"}</span>}

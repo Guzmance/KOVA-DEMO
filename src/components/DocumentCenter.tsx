@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { DOC_TEMPLATES, TEMPLATE_TYPES, type DocTemplate } from "@/lib/templates";
 import { VERTICAL_CONFIG } from "@/lib/data";
+import { useToast, ToastContainer } from "@/components/ui/toast";
 
 interface LineItem { id:string; description:string; qty:number; unit:string; price:number; }
 
@@ -80,6 +81,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const { toast, toasts, dismiss } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = docs.filter(d=>d.type===tab);
@@ -148,7 +150,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
             {Object.entries(scanResult).filter(([,v])=>v).map(([k,v])=>(
               <div key={k} style={{fontSize:12,marginBottom:3}}><span style={{color:"#64748B"}}>{k}: </span><strong>{String(v)}</strong></div>
             ))}
-            <button onClick={()=>{alert("Added to CRM!");setShowScanner(false);}} style={{marginTop:10,padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:12,fontWeight:700,cursor:"pointer",width:"100%"}}>✓ Add to CRM + Score</button>
+            <button onClick={()=>{toast("Added to CRM and scoring queued");setShowScanner(false);}} style={{marginTop:10,padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:12,fontWeight:700,cursor:"pointer",width:"100%"}}>✓ Add to CRM + Score</button>
           </div>
         )}
       </div>
@@ -299,6 +301,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
   // ── LIST VIEW ──────────────────────────────────────────────────────────────
   return (
     <div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>Document Center</div>

@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { Quote, QuoteLineItem } from "@/lib/types";
 import { SAMPLE_QUOTES } from "@/lib/quotes";
 import { VERTICAL_CONFIG } from "@/lib/data";
+import InvoiceModal from "@/components/InvoiceModal";
+import { useToast, ToastContainer } from "@/components/ui/toast";
 
 const FONTS = [
   { id:"Inter",    label:"Modern",   sample:"Clean & Professional" },
@@ -56,6 +58,8 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
   );
   const [active, setActive]     = useState<Quote>(emptyQuote());
   const [preview, setPreview]   = useState<Quote|null>(null);
+  const [invoiceFor, setInvoiceFor] = useState<Quote|null>(null);
+  const { toast, toasts, dismiss } = useToast();
 
   const openNew = () => { setActive(emptyQuote()); setView("builder"); };
   const openEdit = (q: Quote) => { setActive({...q}); setView("builder"); };
@@ -80,14 +84,15 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
   };
   const sendQuote = (q: Quote) => {
     setQuotes(qs=>qs.map(x=>x.id===q.id?{...x,status:"sent",sentAt:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}:x));
-    alert(`Quote sent to ${q.email || q.contact}`);
+    toast(`Quote sent to ${q.email || q.contact}`);
   };
 
   const { sub, taxAmt, total } = calcTotal(active.lines, active.tax);
 
   // ── LIST VIEW ──────────────────────────────────────────────────────────────
   if(view==="list") return (
-    <div>
+    <div style={{position:"relative"}}>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>Quotes & Proposals</div>
@@ -139,11 +144,15 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
               {q.status==="draft"&&<button onClick={()=>sendQuote(q)} style={{flex:1,padding:"6px",background:"#0F172A",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",color:"#fff"}}>
                 Send
               </button>}
-              {q.status==="accepted"&&<div style={{flex:1,padding:"6px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:6,fontSize:11,fontWeight:600,color:"#15803D",textAlign:"center"}}>✓ Accepted</div>}
+              {q.status==="accepted"&&<button onClick={()=>setInvoiceFor(q)} style={{flex:1,padding:"6px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:6,fontSize:11,fontWeight:600,color:"#15803D",cursor:"pointer"}}>→ Invoice</button>}
             </div>
           </div>
         );
       })}
+
+      {invoiceFor && (
+        <InvoiceModal quote={invoiceFor} onClose={()=>setInvoiceFor(null)} />
+      )}
     </div>
   );
 
@@ -258,6 +267,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
   const {sub:ps, taxAmt:pt, total:pTotal} = calcTotal(q.lines, q.tax);
   return (
     <div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <button onClick={()=>setView(preview?"list":"builder")} style={{background:"none",border:"none",fontSize:12,color:"#64748B",cursor:"pointer"}}>← {preview?"Quotes":"Edit"}</button>
         <div style={{display:"flex",gap:6}}>
@@ -350,7 +360,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
           {/* Accept CTA */}
           <div style={{textAlign:"center",padding:"14px",background:`${q.accentColor}10`,borderRadius:9,border:`1px solid ${q.accentColor}33`}}>
             <div style={{fontSize:12,color:"#64748B",marginBottom:8}}>Ready to move forward?</div>
-            <button onClick={()=>alert("In production this lets the client accept digitally and triggers a KOVA deal update.")} style={{padding:"11px 32px",background:q.accentColor,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:"0.3px"}}>
+            <button onClick={()=>toast("Quote accepted — deal created and CRM updated","success")} style={{padding:"11px 32px",background:q.accentColor,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:"0.3px"}}>
               Accept This Proposal
             </button>
             <div style={{fontSize:10,color:"#94A3B8",marginTop:6}}>Valid until {q.validUntil||"—"} · Questions? Reply to this email.</div>

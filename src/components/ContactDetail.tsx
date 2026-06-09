@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 interface ContactFull {
   id:number; name:string; company:string; title:string; email:string;
@@ -31,15 +32,15 @@ interface Task { id:string; title:string; due:string; done:boolean; priority:str
 // ── SAMPLE DATA ──────────────────────────────────────────────────────────────
 const SAMPLE_CONTACT: ContactFull = {
   id:1, name:"Sarah Mitchell", company:"Apex Realty Group", title:"Managing Broker",
-  email:"s.mitchell@apexrealty.com", phone:"(305) 555-0142",
-  address:"2400 Brickell Ave", city:"Miami", state:"FL", zip:"33129",
+  email:"s.mitchell@apexrealty.com", phone:"(305) 714-2381",
+  address:"2400 Brickell Ave, Suite 310", city:"Miami", state:"FL", zip:"33129",
   website:"apexrealtygroup.com", linkedin:"linkedin.com/in/sarahmitchell",
   source:"Google Ads", tags:["VIP","Referral Partner","Active"],
   score:87, stage:"Customer", status:"Active", vertical:"Real Estate",
   avatar:"", initials:"SM",
   lifetimeValue:48600, dealCount:4, quoteCount:6,
-  avgDealSize:12150, lastContact:"Jun 2, 2026", firstContact:"Mar 14, 2024",
-  lastPurchase:"May 28, 2026", nextLikelyAction:"Refer new listing client",
+  avgDealSize:12150, lastContact:"Jun 4, 2026", firstContact:"Mar 14, 2024",
+  lastPurchase:"Jun 2, 2026", nextLikelyAction:"Close Coral Gables staging deal — follow up Tue AM",
   buyProbability:72, preferredChannel:"Email", responseTime:"< 2 hours",
   emailsOpened:34, emailsSent:42, meetingsHeld:8,
   quotesAccepted:4, quotesSent:6, pageVisits:156,
@@ -47,40 +48,49 @@ const SAMPLE_CONTACT: ContactFull = {
 };
 
 const SAMPLE_ACTIVITIES: Activity[] = [
-  {id:"a1",type:"email",title:"Re: Hialeah listing staging proposal",body:"Sarah confirmed she wants to move forward with the staging package. Signed the quote same day. Invoice sent.",date:"Jun 2",time:"2:14 PM",from:"s.mitchell@apexrealty.com",to:"you"},
-  {id:"a2",type:"quote",title:"Quote sent — Property Staging Q-2026-001",body:"$8,180 — staging, photography, landscaping for Hialeah listing. Accepted same day.",date:"May 30",time:"10:30 AM",status:"accepted"},
-  {id:"a3",type:"meeting",title:"Listing strategy review — 45 min",body:"Reviewed 3 upcoming listings. Sarah wants staging proposals for all three. Discussed referral arrangement for property management clients.",date:"May 28",time:"11:00 AM"},
-  {id:"a4",type:"call",title:"Inbound call — new listing inquiry",body:"Sarah called about staging a new listing at 1420 W 49th St. Wants a quote by Friday. Budget ~$8K. Timeline: 2 weeks.",date:"May 27",time:"3:45 PM"},
-  {id:"a5",type:"score",title:"AI Score updated: 87",body:"Fit: 92 · Intent: 84 · Timing: 88 · Value: 85. Recommendation: Strong referral partner. Nurture with quarterly check-ins and first access to new services.",date:"May 25",time:"Auto"},
-  {id:"a6",type:"note",title:"Internal note",body:"Sarah mentioned she's expanding to Broward County. Could be 3-5 new listings per quarter. Follow up in July about a volume pricing arrangement.",date:"May 20",time:"4:10 PM"},
-  {id:"a7",type:"email",title:"Welcome to KOVA — Your CRM is ready",body:"Automated welcome email delivered. Opened within 2 hours.",date:"Mar 14",time:"9:00 AM",status:"opened"},
-  {id:"a8",type:"sms",title:"Quote follow-up",body:"Hi Sarah, just checking — did you get a chance to review the staging proposal? Happy to adjust anything. - Michael",date:"May 31",time:"10:15 AM",status:"delivered"},
+  {id:"a1",type:"sms",title:"Coral Gables proposal follow-up",body:"Hi Sarah — did you get a chance to look at Q-2026-004? Happy to adjust the furniture package if the budget needs to shift. – Michael",date:"Jun 4",time:"9:22 AM",status:"delivered"},
+  {id:"a2",type:"email",title:"Re: Hialeah listing staging proposal",body:"Sarah replied confirming she wants to move forward with the full package. Signed the quote the same afternoon. Invoice sent, deposit due in 5 days.",date:"Jun 2",time:"2:14 PM",from:"s.mitchell@apexrealty.com",to:"you"},
+  {id:"a3",type:"sms",title:"Pre-close follow-up — Hialeah quote",body:"Hi Sarah, just checking in — did you get a chance to review the staging proposal? Happy to adjust anything. – Michael",date:"May 31",time:"10:15 AM",status:"delivered"},
+  {id:"a4",type:"quote",title:"Quote accepted — Property Staging Q-2026-001",body:"$8,180 — full staging, professional photography, and landscaping touch-up for the Hialeah listing. Sarah accepted within 3 hours of receiving it.",date:"May 30",time:"10:30 AM",status:"accepted"},
+  {id:"a5",type:"meeting",title:"Listing strategy review — 45 min",body:"Walked through 3 upcoming listings: Hialeah, Coral Gables, and a Brickell condo. Sarah wants staging proposals for all three. Also discussed a referral arrangement for her property management clients.",date:"May 28",time:"11:00 AM"},
+  {id:"a6",type:"call",title:"Inbound call — Hialeah listing inquiry",body:"Sarah called about staging a new 3BR at 1420 W 49th St, Hialeah. Wants a quote by Friday. Budget ~$8K. Timeline: 2 weeks out from listing. Said the last place we staged sold above ask.",date:"May 27",time:"3:45 PM"},
+  {id:"a7",type:"score",title:"AI Score updated → 87",body:"Fit: 92 · Intent: 84 · Timing: 88 · Value: 85. Moved from 74 to 87 in 30 days. Strong referral partner. Nurture with quarterly check-ins and early access to new service packages.",date:"May 25",time:"9:00 AM"},
+  {id:"a8",type:"note",title:"Broward County expansion — flag for July",body:"Sarah mentioned she's opening a second office in Broward County in Q3. Expects 3–5 listings per quarter from that market. Flagged for volume pricing conversation in early July.",date:"May 20",time:"4:10 PM"},
+  {id:"a9",type:"call",title:"Check-in call — market timing",body:"10-minute catch-up. She's watching the Broward market closely before committing to the second office. Said staging turnaround time matters a lot to her team. Noted: she evaluates vendors primarily on speed and reliability.",date:"May 5",time:"2:30 PM"},
+  {id:"a10",type:"deal",title:"Deal closed — Brickell Condo Photography",body:"$2,600 photography package for a Brickell condo listing. First closed deal. Delivered 3 days early. Sarah sent a referral the following week.",date:"Apr 10",time:"3:00 PM",status:"won"},
+  {id:"a11",type:"meeting",title:"First meeting — discovery & needs assessment",body:"45-minute intro call. Sarah manages 12 agents and handles roughly 8–10 listings per month. Looking for a reliable staging and photography partner. Pain point: slow turnaround from current vendors.",date:"Mar 20",time:"10:00 AM"},
+  {id:"a12",type:"email",title:"Welcome to KOVA — your CRM is ready",body:"Automated onboarding email delivered. Opened within 90 minutes. Clicked the 'View Your Dashboard' CTA.",date:"Mar 14",time:"9:00 AM",status:"opened"},
 ];
 
 const SAMPLE_DEALS: Deal[] = [
-  {id:"d1",name:"Hialeah Listing Staging",value:8180,stage:"Closed Won",probability:100,closeDate:"Jun 2, 2026"},
+  {id:"d1",name:"Hialeah Listing — Full Staging Package",value:8180,stage:"Closed Won",probability:100,closeDate:"Jun 2, 2026"},
   {id:"d2",name:"Coral Gables Home Staging",value:12400,stage:"Proposal Sent",probability:65,closeDate:"Jun 20, 2026"},
-  {id:"d3",name:"Volume Staging Agreement — Q3",value:24000,stage:"Discovery",probability:30,closeDate:"Jul 15, 2026"},
+  {id:"d3",name:"Broward Volume Staging Agreement — Q3",value:24000,stage:"Discovery",probability:28,closeDate:"Aug 1, 2026"},
   {id:"d4",name:"Brickell Condo Photography",value:2600,stage:"Closed Won",probability:100,closeDate:"Apr 10, 2026"},
+  {id:"d5",name:"Annual Photography Retainer — Apex Realty",value:9600,stage:"Qualifying",probability:45,closeDate:"Jul 8, 2026"},
 ];
 
 const SAMPLE_QUOTES: Quote[] = [
   {id:"q1",number:"Q-2026-001",title:"Property Staging — Hialeah",total:8180,status:"accepted",date:"May 30"},
   {id:"q2",number:"Q-2026-004",title:"Home Staging — Coral Gables",total:12400,status:"sent",date:"Jun 1"},
-  {id:"q3",number:"Q-2026-005",title:"Photography Package — Brickell",total:2600,status:"accepted",date:"Apr 8"},
+  {id:"q3",number:"Q-2026-009",title:"Annual Photography Retainer — Apex",total:9600,status:"viewed",date:"Jun 3"},
+  {id:"q4",number:"Q-2026-005",title:"Photography Package — Brickell",total:2600,status:"accepted",date:"Apr 8"},
+  {id:"q5",number:"Q-2026-002",title:"Staging — Kendall Listing (declined)",total:7400,status:"declined",date:"Apr 22"},
 ];
 
 const SAMPLE_TASKS: Task[] = [
-  {id:"t1",title:"Send Coral Gables staging proposal",due:"Jun 5",done:false,priority:"high"},
-  {id:"t2",title:"Follow up on Q3 volume pricing discussion",due:"Jul 1",done:false,priority:"medium"},
-  {id:"t3",title:"Schedule quarterly review meeting",due:"Jun 15",done:false,priority:"low"},
-  {id:"t4",title:"Send welcome package to Sarah's new agents",due:"May 20",done:true,priority:"medium"},
+  {id:"t1",title:"Follow up on Coral Gables proposal (Q-2026-004)",due:"Jun 6",done:false,priority:"high"},
+  {id:"t2",title:"Prepare volume pricing deck for Broward office opening",due:"Jun 30",done:false,priority:"medium"},
+  {id:"t3",title:"Schedule Q3 check-in — Broward expansion timing",due:"Jun 15",done:false,priority:"medium"},
+  {id:"t4",title:"Send retainer contract for annual photography agreement",due:"Jun 10",done:false,priority:"high"},
+  {id:"t5",title:"Send welcome package to Sarah's 3 new Broward agents",due:"May 20",done:true,priority:"low"},
 ];
 
 const SAMPLE_NOTES = [
-  {id:"n1",text:"Sarah is expanding to Broward County — could mean 3-5 new listings per quarter. Volume pricing discussion planned for July.",date:"May 20",by:"Michael"},
-  {id:"n2",text:"Prefers email over phone for proposals. Responds within 2 hours during business hours. Best day to reach: Tuesday or Thursday AM.",date:"Apr 15",by:"Michael"},
-  {id:"n3",text:"Referral partner — has sent 2 property management clients our way. Consider a referral discount or priority scheduling.",date:"Mar 28",by:"AI Agent"},
+  {id:"n1",text:"Sarah is opening a Broward office in Q3 (August target). She's expecting 3–5 new listings per month from that market. Volume pricing deck needs to be ready before the June 30 follow-up.",date:"May 20",by:"Michael"},
+  {id:"n2",text:"Prefers email for proposals — always responds within 2 hours during business hours. Best days to reach: Tuesday or Thursday AM. Never call before 9am.",date:"Apr 15",by:"Michael"},
+  {id:"n3",text:"Referral partner value: has sent 2 property management clients who each converted. One at $6,200/yr, one at $4,800/yr. Consider locking in a formal referral discount (10%) to protect this channel.",date:"Mar 28",by:"AI Agent"},
+  {id:"n4",text:"Lost the Kendall staging quote in April to a cheaper local competitor ($7,400 vs our $7,400 — they just moved faster). She came back 3 weeks later. Speed and responsiveness are key differentiators for her team.",date:"Apr 22",by:"Michael"},
 ];
 
 const ACTIVITY_ICONS:Record<string,{icon:string,color:string}> = {
@@ -91,30 +101,77 @@ const ACTIVITY_ICONS:Record<string,{icon:string,color:string}> = {
 
 function fv(n:number){ return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 
+type BlockId = "score" | "activity" | "deals" | "info" | "nextaction" | "tasks";
+
+const DEFAULT_BLOCKS: BlockId[] = ["score", "activity", "deals", "info", "nextaction", "tasks"];
+
 export default function ContactDetail({ contact, accentColor, onBack }:{ contact?:any; accentColor:string; onBack:()=>void }) {
-  const [tab, setTab] = useState("activity");
-  const [taskDone, setTaskDone] = useState<Record<string,boolean>>({t4:true});
-  const c = contact || SAMPLE_CONTACT;
+  const [tab, setTab] = useState("overview");
+  const [taskDone, setTaskDone] = useState<Record<string,boolean>>({t5:true});
+  const [blocks, setBlocks] = useState<BlockId[]>(DEFAULT_BLOCKS);
+  const [draggingBlock, setDraggingBlock] = useState<BlockId|null>(null);
   const P = accentColor;
 
+  // Normalize CRM Contact format (fn/ln/co) to the full ContactDetail format
+  const raw = contact || SAMPLE_CONTACT;
+  const c = raw.fn !== undefined ? {
+    ...SAMPLE_CONTACT,
+    name:    `${raw.fn} ${raw.ln}`,
+    company: raw.co,
+    title:   raw.role,
+    email:   raw.email,
+    phone:   raw.phone,
+    city:    raw.city?.split(",")[0]  ?? "Miami",
+    state:   raw.city?.split(", ")[1] ?? "FL",
+    score:   raw.score,
+    initials:(raw.fn[0] || "") + (raw.ln[0] || ""),
+    status:  raw.status === "customer" ? "Active" : raw.status.charAt(0).toUpperCase() + raw.status.slice(1),
+    stage:   raw.status === "customer" ? "Customer" : raw.status === "qualified" ? "Qualified" : "Lead",
+    notes:   raw.notes  ?? "",
+    nextLikelyAction: raw.action ?? SAMPLE_CONTACT.nextLikelyAction,
+  } : raw;
+
+  const handleBlockDragStart = useCallback((id: BlockId) => setDraggingBlock(id), []);
+  const handleBlockDrop = useCallback((targetId: BlockId) => {
+    if (!draggingBlock || draggingBlock === targetId) { setDraggingBlock(null); return; }
+    setBlocks(prev => {
+      const next = [...prev];
+      const from = next.indexOf(draggingBlock);
+      const to = next.indexOf(targetId);
+      next.splice(from, 1);
+      next.splice(to, 0, draggingBlock);
+      return next;
+    });
+    setDraggingBlock(null);
+  }, [draggingBlock]);
+
   const TABS = [
-    {id:"activity", label:"Activity",  icon:"⚡", count:SAMPLE_ACTIVITIES.length},
-    {id:"email",    label:"Email",     icon:"✉️", count:3},
-    {id:"tasks",    label:"Tasks",     icon:"☑️", count:SAMPLE_TASKS.filter(t=>!taskDone[t.id]).length},
-    {id:"notes",    label:"Notes",     icon:"📝", count:SAMPLE_NOTES.length},
-    {id:"calendar", label:"Calendar",  icon:"📅", count:2},
-    {id:"quotes",   label:"Quotes",    icon:"📋", count:SAMPLE_QUOTES.length},
-    {id:"deals",    label:"Deals",     icon:"💰", count:SAMPLE_DEALS.length},
-    {id:"stats",    label:"Stats",     icon:"📊"},
-    {id:"docs",     label:"Documents", icon:"🗂️", count:4},
+    {id:"overview",  label:"Overview",  icon:"🧩"},
+    {id:"activity",  label:"Activity",  icon:"⚡", count:SAMPLE_ACTIVITIES.length},
+    {id:"email",     label:"Email",     icon:"✉️", count:3},
+    {id:"tasks",     label:"Tasks",     icon:"☑️", count:SAMPLE_TASKS.filter(t=>!taskDone[t.id]).length},
+    {id:"notes",     label:"Notes",     icon:"📝", count:SAMPLE_NOTES.length},
+    {id:"calendar",  label:"Calendar",  icon:"📅", count:2},
+    {id:"quotes",    label:"Quotes",    icon:"📋", count:SAMPLE_QUOTES.length},
+    {id:"deals",     label:"Deals",     icon:"💰", count:SAMPLE_DEALS.length},
+    {id:"stats",     label:"Stats",     icon:"📊"},
+    {id:"docs",      label:"Documents", icon:"🗂️", count:6},
   ];
 
   const scoreColor = c.score>=80?"#15803D":c.score>=60?"#F59E0B":c.score>=40?"#3B9EFF":"#EF4444";
 
   return (
     <div>
-      {/* Back button */}
-      <button onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:"#64748B",cursor:"pointer",marginBottom:8}}>← Back to Contacts</button>
+      {/* Breadcrumb */}
+      <Breadcrumb className="mb-2">
+        <BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink onClick={onBack}>Contacts</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbLink onClick={onBack}>{c.name}</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>Full Profile</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* CONTACT HEADER */}
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden",marginBottom:10}}>
@@ -179,6 +236,163 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
 
       {/* TAB CONTENT */}
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"14px 16px",minHeight:300}}>
+
+        {/* OVERVIEW — draggable blocks */}
+        {tab==="overview" && (() => {
+          const scoreColor = c.score>=80?"#15803D":c.score>=60?"#F59E0B":c.score>=40?"#3B9EFF":"#EF4444";
+          const openDeals = SAMPLE_DEALS.filter(d=>d.stage!=="Closed Won");
+          const openTasks = SAMPLE_TASKS.filter(t=>!(taskDone[t.id]));
+
+          const BLOCK_MAP: Record<BlockId, { title: string; icon: string; content: React.ReactNode }> = {
+            score: {
+              title: "AI Lead Score",
+              icon: "🎯",
+              content: (
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"6px 0"}}>
+                  <div style={{width:56,height:56,borderRadius:"50%",background:scoreColor,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #fff",boxShadow:"0 0 0 3px "+scoreColor+"33",flexShrink:0}}>
+                    <span style={{fontSize:18,fontWeight:800,color:"#fff"}}>{c.score}</span>
+                  </div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:2}}>{c.score>=80?"High Priority":c.score>=60?"Warm Lead":"Needs Nurture"}</div>
+                    <div style={{fontSize:11,color:"#64748B"}}>Buy probability: {c.buyProbability}%</div>
+                    <div style={{fontSize:11,color:"#64748B"}}>Stage: {c.stage}</div>
+                  </div>
+                </div>
+              )
+            },
+            activity: {
+              title: "Recent Activity",
+              icon: "⚡",
+              content: (
+                <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  {SAMPLE_ACTIVITIES.slice(0,3).map((a,i)=>{
+                    const ai = ACTIVITY_ICONS[a.type]||{icon:"📌",color:"#64748B"};
+                    return (
+                      <div key={a.id} style={{display:"flex",gap:7,alignItems:"flex-start",padding:"5px 0",borderBottom:i<2?"1px solid #F8FAFC":"none"}}>
+                        <div style={{width:22,height:22,borderRadius:"50%",background:ai.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>{ai.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:11,fontWeight:600,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
+                          <div style={{fontSize:10,color:"#94A3B8"}}>{a.date}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            },
+            deals: {
+              title: "Open Deals",
+              icon: "💰",
+              content: openDeals.length===0 ? (
+                <div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"10px 0"}}>No open deals</div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {openDeals.map(d=>(
+                    <div key={d.id} style={{display:"flex",alignItems:"center",gap:7,padding:"4px 6px",background:"#F8FAFC",borderRadius:5}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,fontWeight:600,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.name}</div>
+                        <div style={{fontSize:10,color:"#64748B"}}>{d.stage} · {d.probability}%</div>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:700,color:P,flexShrink:0}}>{fv(d.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            },
+            info: {
+              title: "Contact Info",
+              icon: "👤",
+              content: (
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {[["Email",c.email],["Phone",c.phone],["Company",c.company],["Location",c.city+", "+c.state]].map(([l,v])=>(
+                    <div key={l} style={{display:"flex",gap:7,fontSize:11}}>
+                      <span style={{color:"#94A3B8",minWidth:55}}>{l}</span>
+                      <span style={{color:"#0F172A",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v as string}</span>
+                    </div>
+                  ))}
+                  <div style={{display:"flex",gap:4,marginTop:3,flexWrap:"wrap"}}>
+                    {c.tags.map((t:string)=><span key={t} style={{fontSize:9,padding:"2px 6px",borderRadius:99,background:"#F1F5F9",color:"#64748B"}}>{t}</span>)}
+                  </div>
+                </div>
+              )
+            },
+            nextaction: {
+              title: "Next Best Action",
+              icon: "🧠",
+              content: (
+                <div style={{padding:"8px 10px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:7}}>
+                  <div style={{fontSize:11,color:"#92400E",lineHeight:1.6,marginBottom:5}}>{c.nextLikelyAction}.</div>
+                  <div style={{display:"flex",gap:10,fontSize:10,color:"#B45309"}}>
+                    <span>📧 {c.preferredChannel}</span>
+                    <span>⚡ {c.responseTime}</span>
+                    <span>🎯 {c.buyProbability}% close</span>
+                  </div>
+                </div>
+              )
+            },
+            tasks: {
+              title: "Open Tasks",
+              icon: "☑️",
+              content: openTasks.length===0 ? (
+                <div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"10px 0"}}>All tasks complete ✓</div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {openTasks.slice(0,3).map(t=>(
+                    <div key={t.id} onClick={()=>setTaskDone(p=>({...p,[t.id]:true}))} style={{display:"flex",gap:7,alignItems:"center",padding:"4px 6px",background:"#F8FAFC",borderRadius:5,cursor:"pointer"}}>
+                      <div style={{width:14,height:14,borderRadius:3,border:"1.5px solid #CBD5E1",flexShrink:0}} />
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.title}</div>
+                        <div style={{fontSize:10,color:"#94A3B8"}}>{t.due}</div>
+                      </div>
+                      <span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:t.priority==="high"?"#FEF2F2":"#F8FAFC",color:t.priority==="high"?"#B91C1C":"#64748B",fontWeight:600}}>{t.priority}</span>
+                    </div>
+                  ))}
+                  {openTasks.length>3 && <div style={{fontSize:10,color:"#94A3B8",textAlign:"center",paddingTop:2}}>+{openTasks.length-3} more</div>}
+                </div>
+              )
+            }
+          };
+
+          return (
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12}}>
+                <span style={{fontSize:11,color:"#64748B"}}>Drag blocks to customize your layout</span>
+                <button onClick={()=>setBlocks(DEFAULT_BLOCKS)} style={{fontSize:9,padding:"2px 7px",borderRadius:99,border:"1px solid #E2E8F0",background:"#F8FAFC",color:"#64748B",cursor:"pointer"}}>Reset</button>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                {blocks.map((id)=>{
+                  const b = BLOCK_MAP[id];
+                  return (
+                    <div
+                      key={id}
+                      draggable
+                      onDragStart={()=>handleBlockDragStart(id)}
+                      onDragOver={e=>{e.preventDefault();}}
+                      onDrop={()=>handleBlockDrop(id)}
+                      style={{
+                        background:"#fff",
+                        border:`1px solid ${draggingBlock===id?"#0F172A":"#E2E8F0"}`,
+                        borderRadius:10,
+                        padding:"10px 12px",
+                        cursor:"grab",
+                        opacity:draggingBlock===id?0.5:1,
+                        transition:"all .2s",
+                        boxShadow:draggingBlock===id?"0 4px 12px rgba(0,0,0,0.12)":"none",
+                      }}
+                    >
+                      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8}}>
+                        <span style={{fontSize:13}}>{b.icon}</span>
+                        <span style={{fontSize:11,fontWeight:700,color:"#0F172A"}}>{b.title}</span>
+                        <span style={{marginLeft:"auto",fontSize:14,color:"#CBD5E1",cursor:"grab"}}>⋮⋮</span>
+                      </div>
+                      {b.content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ACTIVITY TIMELINE */}
         {tab==="activity" && (
@@ -398,7 +612,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
 
             <div style={{marginTop:12,padding:"10px 14px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8}}>
               <div style={{fontSize:10,fontWeight:700,color:"#B45309",marginBottom:3}}>🧠 AI Prediction</div>
-              <div style={{fontSize:12,color:"#92400E",lineHeight:1.6}}>Sarah is {c.buyProbability}% likely to close the Coral Gables staging deal within 14 days. Her engagement pattern (email opens within 2 hours, 8 meetings held, 67% quote acceptance rate) indicates strong intent. Recommended: send follow-up Tuesday AM with revised pricing for the Q3 volume arrangement.</div>
+              <div style={{fontSize:12,color:"#92400E",lineHeight:1.6}}>Sarah is {c.buyProbability}% likely to close the Coral Gables staging deal within 14 days. Engagement signals are strong: last email opened in under 90 minutes, 8 meetings held, 67% quote win rate. The annual photography retainer (Q-2026-009) has been viewed but not actioned — bundle it into the Tuesday follow-up. Priority: reach her before she routes the Broward listings to another vendor.</div>
             </div>
           </div>
         )}
@@ -408,10 +622,12 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
           <div>
             <div style={{fontSize:11,color:"#64748B",marginBottom:10}}>All documents linked to {c.name}</div>
             {[
-              {type:"Quote",num:"Q-2026-001",title:"Property Staging — Hialeah",total:8180,status:"accepted",color:"#10B981"},
               {type:"Invoice",num:"INV-2026-201",title:"Staging Services — Hialeah",total:8180,status:"paid",color:"#15803D"},
+              {type:"Quote",num:"Q-2026-009",title:"Annual Photography Retainer — Apex",total:9600,status:"viewed",color:"#F59E0B"},
               {type:"Quote",num:"Q-2026-004",title:"Home Staging — Coral Gables",total:12400,status:"sent",color:"#3B9EFF"},
+              {type:"Quote",num:"Q-2026-001",title:"Property Staging — Hialeah",total:8180,status:"accepted",color:"#10B981"},
               {type:"Receipt",num:"REC-2026-050",title:"Deposit — Hialeah Staging",total:4090,status:"generated",color:"#64748B"},
+              {type:"Quote",num:"Q-2026-005",title:"Photography Package — Brickell",total:2600,status:"accepted",color:"#10B981"},
             ].map((d,i)=>(
               <div key={i} style={{padding:"9px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:5,borderLeft:`3px solid ${d.color}`,display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:d.color+"15",color:d.color,fontWeight:600}}>{d.type}</span>

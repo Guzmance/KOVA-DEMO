@@ -7,8 +7,20 @@ import DocumentCenter from "@/components/DocumentCenter";
 import ContactDetail from "@/components/ContactDetail";
 import MapView from "@/components/MapView";
 import AgentDocumentAssistant from "@/components/AgentDocumentAssistant";
+import FinancialHub from "@/components/FinancialHub";
+import CardScanModal from "@/components/CardScanModal";
+import EstimateBuilder from "@/components/EstimateBuilder";
+import { Button } from "@/components/ui/button";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { useToast, ToastContainer } from "@/components/ui/toast";
 
-type ExtView = View | "pipeline" | "ask" | "quotes" | "docs" | "map";
+function copyDeals(id: string): Record<string, Deal[]> {
+  return Object.fromEntries(
+    Object.entries(ALL_DEALS[id] || {}).map(([k, v]) => [k, [...(v as Deal[])]])
+  );
+}
+
+type ExtView = View | "pipeline" | "ask" | "quotes" | "docs" | "map" | "finance" | "estimates";
 
 export default function CRM() {
   const [vertId, setVertId]       = useState("real_estate");
@@ -20,6 +32,7 @@ export default function CRM() {
   const [modal, setModal]         = useState<Modal>(null);
   const [showDocAgent, setShowDocAgent] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact|null>(null);
+  const [showScanModal, setShowScanModal] = useState(false);
   const [contactsView, setContactsView] = useState<"list"|"map">("list");
   const [modalData, setModalData] = useState<any>(null);
   const [cFilter, setCFilter]     = useState("all");
@@ -43,6 +56,16 @@ export default function CRM() {
   const [pipeDone, setPipeDone]     = useState(false);
   const [pipeCount, setPipeCount]   = useState(0);
   const pipeTimer = useRef<any>(null);
+
+  // ── Deals Kanban state ────────────────────────────────────────────────────
+  const [pipeDeals, setPipeDeals]         = useState<Record<string,Deal[]>>(()=>copyDeals("real_estate"));
+  const [dragDeal, setDragDeal]           = useState<{deal:Deal; fromStage:string}|null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string|null>(null);
+  const [newDealStage, setNewDealStage]   = useState(ALL_STAGES[0]);
+  const [newDealForm, setNewDealForm]     = useState({title:"",co:"",contact:"",val:"",prob:"50",close:""});
+  const [localContacts, setLocalContacts] = useState<Contact[]>([]);
+  const [newContactForm, setNewContactForm] = useState({firstName:"",lastName:"",company:"",email:"",phone:""});
+  const { toast, toasts, dismiss } = useToast();
 
   // ── Score All state ───────────────────────────────────────────────────────
   const [scoringAll, setScoringAll]         = useState(false);
@@ -74,6 +97,20 @@ export default function CRM() {
     setReport(null); setScoring({});
     setPipeStep(-1); setPipeRunning(false); setPipeDone(false);
     setNlAnswer(null); setNlHistory([]); setScoreAllDone(false);
+    setPipeDeals(copyDeals(id)); setLocalContacts([]);
+  };
+
+  const moveDeal = (deal: Deal, fromStage: string, toStage: string) => {
+    if (fromStage === toStage) return;
+    const updated = { ...deal, stage_hist: [...deal.stage_hist, toStage] };
+    setPipeDeals(prev => {
+      const next: Record<string, Deal[]> = {};
+      for (const [k, v] of Object.entries(prev)) next[k] = [...v];
+      next[fromStage] = (next[fromStage] || []).filter(d => d.id !== deal.id);
+      next[toStage] = [...(next[toStage] || []), updated];
+      return next;
+    });
+    if (selD?.id === deal.id) setSelD(updated);
   };
 
   const ini = (f:string,l:string)=>(f[0]||"")+(l[0]||"");
@@ -186,7 +223,7 @@ export default function CRM() {
 
   const live = (cid:number)=>scoring[cid];
   const liveScore = (cid:number)=>scoring[cid]?.composite_score??null;
-  const filteredContacts = contacts.filter(c=>
+  const filteredContacts = [...contacts, ...localContacts.filter(lc=>lc.vertical===vertId)].filter(c=>
     (cFilter==="all"||c.status===cFilter)&&
     (!search||`${c.fn} ${c.ln} ${c.co}`.toLowerCase().includes(search.toLowerCase()))
   );
@@ -416,6 +453,7 @@ export default function CRM() {
         {["all","new","contacted","qualified","customer"].map(f=>(
           <button key={f} onClick={()=>setCFilter(f)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:"1px solid",borderColor:cFilter===f?P:"#E2E8F0",background:cFilter===f?P+"15":"#fff",color:cFilter===f?P:"#64748B",cursor:"pointer"}}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>
         ))}
+        <button onClick={()=>setShowScanModal(true)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:`1px solid ${P}44`,background:P+"15",color:P,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:3}}>📷 Scan Card</button>
         <span style={{fontSize:10,color:"#94A3B8",flex:1}}>{filteredContacts.length} contacts</span>
         <div style={{display:"flex",background:"#F1F5F9",borderRadius:7,padding:2,gap:1}}>
           <button onClick={()=>setContactsView("list")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="list"?"#fff":"transparent",color:contactsView==="list"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="list"?600:400}}>☰ List</button>
@@ -454,7 +492,13 @@ export default function CRM() {
 
   const renderContactDetail = () => selC && (
     <div>
-      <button onClick={()=>setSelC(null)} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,color:"#64748B",background:"none",border:"none",marginBottom:12,cursor:"pointer"}}>← Contacts</button>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelC(null)}>Contacts</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>{selC.fn} {selC.ln}</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:14}}>
         <div style={{width:46,height:46,borderRadius:"50%",background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:P,flexShrink:0}}>{ini(selC.fn,selC.ln)}</div>
         <div style={{flex:1}}>
@@ -490,14 +534,14 @@ export default function CRM() {
             <>
               <textarea ref={msgRef} defaultValue={defaultMsg(selC)} rows={3} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,color:"#0F172A",resize:"none",background:"#F8FAFC"}} />
               <div style={{display:"flex",gap:6,marginTop:6}}>
-                <button onClick={()=>alert(`${oTab==="sms"?"SMS":"Email"} sent to ${selC.fn}!`)} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
+                <button onClick={()=>toast(`${oTab==="sms"?"SMS":"Email"} sent to ${selC.fn}`)} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
                 <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),oTab)} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>{personalizing?"Writing…":"✨ AI Personalize"}</button>
               </div>
             </>
           ):(
             <>
               <textarea rows={3} placeholder="Log call notes…" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,resize:"none",background:"#F8FAFC"}} />
-              <button onClick={()=>alert("Call logged!")} style={{width:"100%",marginTop:6,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Log Call</button>
+              <button onClick={()=>toast("Call logged successfully")} style={{width:"100%",marginTop:6,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Log Call</button>
             </>
           )}
         </div>
@@ -522,7 +566,13 @@ export default function CRM() {
 
   const renderCompanies = () => selCo?(
     <div>
-      <button onClick={()=>setSelCo(null)} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,color:"#64748B",background:"none",border:"none",marginBottom:12,cursor:"pointer"}}>← Companies</button>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelCo(null)}>Companies</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>{selCo.name}</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <div style={{display:"flex",gap:12,marginBottom:14}}>
         <div style={{width:46,height:46,borderRadius:8,background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:P,flexShrink:0}}>{selCo.name[0]}</div>
         <div><div style={{fontSize:16,fontWeight:700,color:"#0F172A"}}>{selCo.name}</div><div style={{fontSize:12,color:"#64748B",marginTop:2}}>{selCo.industry} · {selCo.city}</div></div>
@@ -564,64 +614,109 @@ export default function CRM() {
     </div>
   );
 
-  const renderDeals = () => selD?(
-    <div>
-      <button onClick={()=>setSelD(null)} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,color:"#64748B",background:"none",border:"none",marginBottom:12,cursor:"pointer"}}>← Pipeline</button>
-      <div style={{display:"flex",gap:12,marginBottom:14}}>
-        <div style={{width:46,height:46,borderRadius:8,background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📊</div>
-        <div><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:16,fontWeight:700,color:"#0F172A"}}>{selD.title}</span><span style={{fontSize:14,fontWeight:700,color:P}}>{fv(selD.val)}</span></div><div style={{fontSize:12,color:"#64748B",marginTop:2}}>{selD.co} · {selD.contact}</div></div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
-        {[["Stage",selD.stage_hist[selD.stage_hist.length-1]],["Probability",selD.prob+"%"],["Close Date",selD.close],["Value",fv(selD.val)]].map(([l,v])=>(
-          <div key={l as string} style={{background:"#F8FAFC",borderRadius:7,padding:"7px 10px"}}>
-            <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{l}</div>
-            <div style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{String(v)}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px"}}>
-        <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Stage History</div>
-        <div style={{display:"flex",alignItems:"flex-start",overflowX:"auto"}}>
-          {ALL_STAGES.map((st,i)=>{
-            const cur=selD.stage_hist[selD.stage_hist.length-1];
-            const si=ALL_STAGES.indexOf(cur);
-            const done=i<si;const curr=i===si;
-            return(
-              <div key={st} style={{display:"flex",alignItems:"center"}}>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,background:done?P+"20":curr?P+"15":"#F8FAFC",border:`1.5px solid ${done?P:curr?P+"66":"#E2E8F0"}`,color:done?P:curr?P:"#94A3B8",fontWeight:700}}>{done?"✓":i+1}</div>
-                  <div style={{fontSize:8,color:"#94A3B8",textAlign:"center",maxWidth:48,whiteSpace:"nowrap"}}>{st}</div>
-                </div>
-                {i<ALL_STAGES.length-1&&<div style={{width:20,height:1,background:done?P+"44":"#E2E8F0",marginBottom:14}} />}
+  const renderDeals = () => {
+    if (selD) {
+      const curStage = selD.stage_hist[selD.stage_hist.length - 1];
+      return (
+        <div>
+          <Breadcrumb className="mb-3">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink onClick={()=>setSelD(null)}>Pipeline</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{selD.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <div style={{display:"flex",gap:12,marginBottom:14}}>
+            <div style={{width:46,height:46,borderRadius:8,background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📊</div>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:16,fontWeight:700,color:"#0F172A"}}>{selD.title}</span>
+                <span style={{fontSize:14,fontWeight:700,color:P}}>{fv(selD.val)}</span>
               </div>
-            );
-          })}
-        </div>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:12}}>
-          {ALL_STAGES.filter(s=>s!==selD.stage_hist[selD.stage_hist.length-1]).map(s=>(
-            <button key={s} onClick={()=>alert(`Deal moved to "${s}"`)} style={{fontSize:11,padding:"4px 10px",border:"1px solid #E2E8F0",borderRadius:6,background:"#F8FAFC",cursor:"pointer"}}>→ {s}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-  ):(
-    <div style={{display:"flex",gap:9,overflowX:"auto",height:"calc(100vh - 130px)"}}>
-      {Object.entries(DEALS).map(([stage,deals])=>(
-        <div key={stage} style={{flex:"0 0 150px",display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,fontWeight:600,color:"#64748B",padding:"3px 0"}}>
-            <span>{stage}</span><span style={{background:"#F1F5F9",borderRadius:99,fontSize:9,padding:"1px 5px"}}>{deals.length}</span>
-          </div>
-          {deals.map(d=>(
-            <div key={d.id} onClick={()=>setSelD(d)} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 10px",cursor:"pointer"}}>
-              <div style={{fontSize:11,fontWeight:600,color:"#0F172A",marginBottom:2,lineHeight:1.3}}>{d.title}</div>
-              <div style={{fontSize:11,color:P,fontWeight:600}}>{fv(d.val)}</div>
-              <div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{d.co}</div>
+              <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{selD.co} · {selD.contact}</div>
             </div>
-          ))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+            {[["Stage",curStage],["Probability",selD.prob+"%"],["Close Date",selD.close],["Value",fv(selD.val)]].map(([l,v])=>(
+              <div key={l as string} style={{background:"#F8FAFC",borderRadius:7,padding:"7px 10px"}}>
+                <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{l}</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{String(v)}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px"}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Stage History</div>
+            <div style={{display:"flex",alignItems:"flex-start",overflowX:"auto"}}>
+              {ALL_STAGES.map((st,i)=>{
+                const si=ALL_STAGES.indexOf(curStage);
+                const done=i<si; const curr=i===si;
+                return(
+                  <div key={st} style={{display:"flex",alignItems:"center"}}>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                      <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,background:done?P+"20":curr?P+"15":"#F8FAFC",border:`1.5px solid ${done?P:curr?P+"66":"#E2E8F0"}`,color:done?P:curr?P:"#94A3B8",fontWeight:700}}>{done?"✓":i+1}</div>
+                      <div style={{fontSize:8,color:"#94A3B8",textAlign:"center",maxWidth:48,whiteSpace:"nowrap"}}>{st}</div>
+                    </div>
+                    {i<ALL_STAGES.length-1&&<div style={{width:20,height:1,background:done?P+"44":"#E2E8F0",marginBottom:14}} />}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:12}}>
+              {ALL_STAGES.filter(s=>s!==curStage).map(s=>(
+                <Button key={s} variant="outline" size="sm" className="text-xs h-7"
+                  style={{borderColor:"#E2E8F0",color:"#64748B"}}
+                  onClick={()=>moveDeal(selD,curStage,s)}>
+                  → {s}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
-  );
+      );
+    }
+    return (
+      <div style={{display:"flex",gap:9,overflowX:"auto",height:"calc(100vh - 130px)"}}>
+        {ALL_STAGES.map(stage=>{
+          const deals = pipeDeals[stage]||[];
+          const isOver = dragOverStage===stage;
+          return(
+            <div key={stage}
+              style={{flex:"0 0 150px",display:"flex",flexDirection:"column",gap:6,borderRadius:8,padding:"4px",transition:"background 0.15s",background:isOver?P+"08":"transparent"}}
+              onDragOver={e=>{e.preventDefault();setDragOverStage(stage);}}
+              onDragLeave={e=>{if(!e.relatedTarget||!e.currentTarget.contains(e.relatedTarget as Node))setDragOverStage(null);}}
+              onDrop={e=>{e.preventDefault();if(dragDeal&&dragDeal.fromStage!==stage){moveDeal(dragDeal.deal,dragDeal.fromStage,stage);}setDragDeal(null);setDragOverStage(null);}}
+            >
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,fontWeight:600,color:"#64748B",padding:"3px 4px"}}>
+                <span>{stage}</span>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{background:"#F1F5F9",borderRadius:99,fontSize:9,padding:"1px 5px"}}>{deals.length}</span>
+                  <button onClick={()=>{setNewDealStage(stage);setModal("create");}} style={{background:"none",border:"none",cursor:"pointer",color:"#94A3B8",fontSize:16,lineHeight:1,padding:"0 2px",display:"flex",alignItems:"center"}}>+</button>
+                </div>
+              </div>
+              {isOver&&<div style={{borderRadius:6,border:`1.5px dashed ${P}`,padding:"8px 4px",textAlign:"center",fontSize:10,fontWeight:600,color:P,background:P+"05"}}>Drop here</div>}
+              {deals.map(d=>(
+                <div key={d.id}
+                  draggable
+                  onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragDeal({deal:d,fromStage:stage});}}
+                  onDragEnd={()=>{setDragDeal(null);setDragOverStage(null);}}
+                  onClick={()=>setSelD(d)}
+                  style={{background:"#fff",border:`1px solid ${dragDeal?.deal.id===d.id?P+"66":"#E2E8F0"}`,borderRadius:8,padding:"9px 10px",cursor:"grab",opacity:dragDeal?.deal.id===d.id?0.45:1,transition:"opacity 0.1s,border-color 0.1s",userSelect:"none"}}
+                >
+                  <div style={{fontSize:11,fontWeight:600,color:"#0F172A",marginBottom:2,lineHeight:1.3}}>{d.title}</div>
+                  <div style={{fontSize:11,color:P,fontWeight:600}}>{fv(d.val)}</div>
+                  <div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{d.co}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderLists = () => {
     const matches=contacts.filter(c=>c.score>=lbMin&&(lbStatus==="all"||c.status===lbStatus));
@@ -645,7 +740,7 @@ export default function CRM() {
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",alignItems:"center"}}>
             <span style={{fontSize:11,color:"#64748B"}}>{matches.length} matching leads</span>
-            <button onClick={()=>alert("List saved!")} style={{fontSize:11,padding:"4px 12px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600}}>Save List</button>
+            <button onClick={()=>toast("List saved")} style={{fontSize:11,padding:"4px 12px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600}}>Save List</button>
           </div>
           <div style={{overflow:"auto",maxHeight:460}}>
             {matches.sort((a,b)=>b.score-a.score).map(c=>(
@@ -764,8 +859,8 @@ export default function CRM() {
     </div>
   );
 
-  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center"};
-  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["docs","🗂️","Documents"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
+  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center",finance:"Financial Hub",estimates:"Estimate Builder",map:"Map View"};
+  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["estimates","📐","Estimates"],["docs","🗂️","Documents"],["finance","💰","Financials"],["map","🗺️","Map"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#F8FAFC",fontFamily:"system-ui,-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
@@ -809,7 +904,37 @@ export default function CRM() {
       {/* MAIN */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:7,padding:"8px 13px",background:"#fff",borderBottom:"1px solid #E2E8F0",flexShrink:0,position:"relative"}}>
-          <span style={{fontSize:13,fontWeight:600,color:"#0F172A",flex:1}}>{selC?`${selC.fn} ${selC.ln}`:selD?selD.title:selCo?selCo.name:titles[view]}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <Breadcrumb>
+              <BreadcrumbList>
+                {selectedContact && view==="contacts" ? (<>
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>{setSelC(null);setSelectedContact(null);}}>Contacts</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelectedContact(null)}>{selC?.fn} {selC?.ln}</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbPage>Full Profile</BreadcrumbPage></BreadcrumbItem>
+                </>) : selC ? (<>
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelC(null)}>Contacts</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbPage>{selC.fn} {selC.ln}</BreadcrumbPage></BreadcrumbItem>
+                </>) : selD ? (<>
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelD(null)}>Pipeline</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbPage>{selD.title}</BreadcrumbPage></BreadcrumbItem>
+                </>) : selCo ? (<>
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>setSelCo(null)}>Companies</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbPage>{selCo.name}</BreadcrumbPage></BreadcrumbItem>
+                </>) : view==="dashboard" ? (
+                  <BreadcrumbItem><BreadcrumbPage>Dashboard</BreadcrumbPage></BreadcrumbItem>
+                ) : (<>
+                  <BreadcrumbItem><BreadcrumbLink onClick={()=>goView("dashboard")}>Dashboard</BreadcrumbLink></BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem><BreadcrumbPage>{titles[view]}</BreadcrumbPage></BreadcrumbItem>
+                </>)}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
           <div style={{position:"relative"}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{padding:"5px 8px 5px 26px",fontSize:11,border:"1px solid #E2E8F0",borderRadius:7,background:"#F8FAFC",width:140,color:"#0F172A"}} />
             <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"#94A3B8",pointerEvents:"none"}}>🔍</span>
@@ -858,28 +983,86 @@ export default function CRM() {
         )}
         {!selectedContact && view==="contacts"  && renderContacts()}
         {view==="quotes"     && <QuoteBuilder vertId={vertId} onBack={()=>goView("dashboard")} />}
+          {view==="map"         && <MapView vertId={vertId} onSelectContact={(loc)=>{
+            if(loc.type==="contact"){
+              const match=contacts.find(c=>`${c.fn} ${c.ln}`===loc.name)||contacts[0];
+              if(match){setSelC(match);goView("contacts");}
+            } else {
+              const match=companies.find(co=>co.name===loc.name)||companies[0];
+              if(match){setSelCo(match);goView("companies");}
+            }
+          }} />}
           {view==="docs"        && <DocumentCenter vertId={vertId} />}
+          {view==="finance"     && <FinancialHub />}
+          {view==="estimates"   && <EstimateBuilder vertId={vertId} />}
         </div>
       </div>
+
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {showScanModal && (
+        <CardScanModal
+          onClose={()=>setShowScanModal(false)}
+          onAdd={(c)=>{ toast(`${c.firstName} ${c.lastName} added to contacts`); setShowScanModal(false); }}
+        />
+      )}
 
       {modal&&(
         <div onClick={()=>setModal(null)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.4)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,width:420,maxHeight:580,overflowY:"auto",padding:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <span style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>{modal==="score"?"AI Score Breakdown":modal==="csv"?"Import CSV":"Add New"}</span>
+              <span style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>{modal==="score"?"AI Score Breakdown":modal==="csv"?"Import CSV":view==="deals"?"Add New Deal":"Add New Contact"}</span>
               <button onClick={()=>setModal(null)} style={{background:"none",border:"none",fontSize:18,color:"#94A3B8",cursor:"pointer"}}>×</button>
             </div>
             {modal==="score"  && renderScoreModal()}
             {modal==="csv"    && renderCSV()}
-            {modal==="create" && (
+            {modal==="create" && view!=="deals" && (
               <div>
-                {[["First Name","text","Sarah"],["Last Name","text","Mitchell"],["Company","text","Company Name"],["Email","email","email@example.com"],["Phone","tel","(555) 000-0000"]].map(([l,t,ph])=>(
-                  <div key={l as string} style={{marginBottom:9}}>
+                {([["First Name","text","Sarah","firstName"],["Last Name","text","Mitchell","lastName"],["Company","text","Company Name","company"],["Email","email","email@example.com","email"],["Phone","tel","(555) 000-0000","phone"]] as [string,string,string,string][]).map(([l,t,ph,key])=>(
+                  <div key={l} style={{marginBottom:9}}>
                     <label style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:3}}>{l}</label>
-                    <input type={t as string} placeholder={ph as string} style={{width:"100%",padding:"8px 10px",border:"1px solid #E2E8F0",borderRadius:7,fontSize:13,color:"#0F172A",background:"#F8FAFC"}} />
+                    <input type={t} placeholder={ph}
+                      value={(newContactForm as any)[key]}
+                      onChange={e=>setNewContactForm(prev=>({...prev,[key]:e.target.value}))}
+                      style={{width:"100%",padding:"8px 10px",border:"1px solid #E2E8F0",borderRadius:7,fontSize:13,color:"#0F172A",background:"#F8FAFC"}} />
                   </div>
                 ))}
-                <button onClick={()=>{alert("Contact created!");setModal(null);}} style={{width:"100%",padding:"9px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:4}}>Create Contact</button>
+                <button onClick={()=>{
+                  if(!newContactForm.firstName.trim())return;
+                  const nc:Contact={id:Date.now(),vertical:vertId,fn:newContactForm.firstName,ln:newContactForm.lastName,co:newContactForm.company,role:"",email:newContactForm.email,phone:newContactForm.phone,status:"new",score:0,city:"",deals:0,lastAct:"Just now",notes:"",breakdown:[],insight:"",action:""};
+                  setLocalContacts(prev=>[...prev,nc]);
+                  setNewContactForm({firstName:"",lastName:"",company:"",email:"",phone:""});
+                  setModal(null);
+                  goView("contacts");
+                }} style={{width:"100%",padding:"9px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:4}}>Create Contact</button>
+              </div>
+            )}
+            {modal==="create" && view==="deals" && (
+              <div>
+                <div style={{marginBottom:12}}>
+                  <label style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6}}>Stage</label>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {ALL_STAGES.map(s=>(
+                      <button key={s} onClick={()=>setNewDealStage(s)} style={{fontSize:11,padding:"3px 9px",borderRadius:6,border:`1px solid ${newDealStage===s?P:"#E2E8F0"}`,background:newDealStage===s?P+"15":"#F8FAFC",color:newDealStage===s?P:"#64748B",cursor:"pointer",fontWeight:newDealStage===s?600:400}}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                {([["Deal Title","text","e.g. Office Renovation","title"],["Company","text","Company name","co"],["Contact","text","Contact name","contact"],["Value ($)","number","25000","val"],["Probability (%)","number","50","prob"],["Close Date","date","","close"]] as [string,string,string,string][]).map(([l,t,ph,key])=>(
+                  <div key={l} style={{marginBottom:9}}>
+                    <label style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:3}}>{l}</label>
+                    <input type={t} placeholder={ph}
+                      value={(newDealForm as any)[key]}
+                      onChange={e=>setNewDealForm(prev=>({...prev,[key]:e.target.value}))}
+                      style={{width:"100%",padding:"8px 10px",border:"1px solid #E2E8F0",borderRadius:7,fontSize:13,color:"#0F172A",background:"#F8FAFC"}} />
+                  </div>
+                ))}
+                <Button className="w-full mt-1" style={{background:"#0F172A",color:"#fff"}} onClick={()=>{
+                  if(!newDealForm.title.trim())return;
+                  const d:Deal={id:Date.now(),title:newDealForm.title,co:newDealForm.co,contact:newDealForm.contact,val:parseInt(newDealForm.val)||0,prob:parseInt(newDealForm.prob)||50,close:newDealForm.close||"TBD",stage_hist:[newDealStage]};
+                  setPipeDeals(prev=>{const n:Record<string,Deal[]>={};for(const[k,v]of Object.entries(prev))n[k]=[...v];n[newDealStage]=[...(n[newDealStage]||[]),d];return n;});
+                  setNewDealForm({title:"",co:"",contact:"",val:"",prob:"50",close:""});
+                  setModal(null);
+                }}>Create Deal</Button>
               </div>
             )}
           </div>

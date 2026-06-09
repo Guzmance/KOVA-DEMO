@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { VERTICAL_CONFIG } from "@/lib/data";
+import { useToast, ToastContainer } from "@/components/ui/toast";
 
 interface Msg { role:"user"|"assistant"; content:string; }
 interface LineItem { id:string; desc:string; qty:number; unit:string; price:number; }
@@ -30,6 +31,7 @@ export default function AgentDocumentAssistant({ vertId, onClose }:{ vertId:stri
   const [input, setInput]     = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { toast, toasts, dismiss } = useToast();
   const inputRef  = useRef<HTMLInputElement>(null);
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[msgs,loading]);
@@ -145,7 +147,7 @@ export default function AgentDocumentAssistant({ vertId, onClose }:{ vertId:stri
         </div>
         {docType==="quote" && (
           <div style={{textAlign:"center",padding:"14px",background:P+"10",borderRadius:8,border:`1px solid ${P}33`}}>
-            <button onClick={()=>alert("In production: e-signature modal opens. On sign, invoice auto-generates.")} style={{padding:"10px 28px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            <button onClick={()=>toast("Signature captured — invoice will auto-generate","success")} style={{padding:"10px 28px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>
               ✍️ Accept & Sign
             </button>
             <div style={{fontSize:10,color:"#94A3B8",marginTop:5}}>Secure · Timestamped · Invoice auto-generated on sign</div>
@@ -154,7 +156,7 @@ export default function AgentDocumentAssistant({ vertId, onClose }:{ vertId:stri
       </div>
       <div style={{padding:"12px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:7}}>
         <button onClick={()=>setPhase("build")} style={{flex:1,padding:"8px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:7,fontSize:12,cursor:"pointer"}}>← Edit with Agent</button>
-        <button onClick={()=>{alert("Sent to "+doc.contact+"!"); onClose();}} style={{flex:1,padding:"8px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Send</button>
+        <button onClick={()=>{toast(`Sent to ${doc.contact || "client"}`); setTimeout(onClose,1200);}} style={{flex:1,padding:"8px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Send</button>
       </div>
     </div>
   );
@@ -162,6 +164,7 @@ export default function AgentDocumentAssistant({ vertId, onClose }:{ vertId:stri
   // PHASE: build
   return (
     <div style={{background:"#fff",borderRadius:14,overflow:"hidden",maxWidth:720,margin:"0 auto",boxShadow:"0 8px 40px rgba(0,0,0,0.12)",display:"flex",height:560}}>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* AGENT PANEL */}
       <div style={{width:320,display:"flex",flexDirection:"column",borderRight:"1px solid #F1F5F9",flexShrink:0}}>
