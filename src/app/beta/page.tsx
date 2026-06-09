@@ -351,16 +351,34 @@ export default function BetaPage() {
     setFields(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }, []);
 
-  // No backend yet — fake submission with a short delay
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fields.name || !fields.email || !fields.company || !fields.industry) {
+      setError("Please fill in all fields.");
+      return;
+    }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setPosition(Math.floor(Math.random() * 80) + 12);
-    setSuccess(true);
-    setLoading(false);
-    if (particleRef.current) spawnParticles(particleRef.current);
-  }, []);
+    setError("");
+    try {
+      const res  = await fetch("/api/beta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong — please try again.");
+        return;
+      }
+      setPosition(data.position);
+      setSuccess(true);
+      if (particleRef.current) spawnParticles(particleRef.current);
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [fields]);
 
   /* ── shared: form JSX ───────────────────────────────────────────── */
 
