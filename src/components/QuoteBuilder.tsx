@@ -5,6 +5,8 @@ import { SAMPLE_QUOTES } from "@/lib/quotes";
 import { VERTICAL_CONFIG } from "@/lib/data";
 import InvoiceModal from "@/components/InvoiceModal";
 import { useToast, ToastContainer } from "@/components/ui/toast";
+import { ClipboardList, Check } from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 
 const FONTS = [
   { id:"Inter",    label:"Modern",   sample:"Clean & Professional" },
@@ -105,7 +107,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
 
       {quotes.length===0 && (
         <div style={{textAlign:"center",padding:"40px",border:"1px dashed #E2E8F0",borderRadius:10,color:"#94A3B8"}}>
-          <div style={{fontSize:28,marginBottom:8}}>📋</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:8}}><IE emoji="📋" Icon={ClipboardList} size={28} color="#94A3B8" /></div>
           <div style={{fontSize:13,fontWeight:600,color:"#64748B",marginBottom:4}}>No quotes yet</div>
           <div style={{fontSize:11,marginBottom:16}}>Create your first branded proposal</div>
           <button onClick={openNew} style={{padding:"8px 18px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>
@@ -118,7 +120,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
         const {total} = calcTotal(q.lines,q.tax);
         const sc = STATUS_COLORS[q.status]||STATUS_COLORS.draft;
         return (
-          <div key={q.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"13px 14px",marginBottom:8,borderLeft:`3px solid ${q.accentColor}`}}>
+          <div key={q.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"18px 20px",marginBottom:8,borderLeft:`3px solid ${q.accentColor}`}}>
             <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
               <div style={{flex:1}}>
                 <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3,flexWrap:"wrap"}}>
@@ -171,7 +173,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
       </div>
 
       {/* Design controls */}
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"20px 22px",marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Design</div>
         <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
           <div>
@@ -196,7 +198,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
       </div>
 
       {/* Client info */}
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"20px 22px",marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Quote Details</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
           {([["title","Proposal Title","Roof Replacement — 4200 Oak St"],["contact","Client Name","John Smith"],["company","Company","Smith Properties LLC"],["email","Email","john@smith.com"],["validUntil","Valid Until","Jul 1, 2026"],["number","Quote Number","Q-2026-001"]] as const).map(([field,label,ph])=>(
@@ -210,7 +212,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
       </div>
 
       {/* Text content */}
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"20px 22px",marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Content</div>
         {([["intro","Opening Statement","Thank you for the opportunity…"],["scope","Scope of Work","Describe what's included…"],["terms","Terms & Conditions","Net 30. 50% deposit to begin…"]] as const).map(([field,label,ph])=>(
           <div key={field} style={{marginBottom:8}}>
@@ -222,7 +224,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
       </div>
 
       {/* Line items */}
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"20px 22px",marginBottom:10}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em"}}>Line Items</div>
           <button onClick={addLine} style={{fontSize:11,padding:"3px 10px",background:active.accentColor+"15",color:active.accentColor,border:`1px solid ${active.accentColor}44`,borderRadius:5,cursor:"pointer",fontWeight:600}}>+ Add Line</button>
@@ -289,7 +291,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
           </div>
         </div>
 
-        <div style={{padding:"20px 24px"}}>
+        <div style={{padding:"24px 28px"}}>
           {/* Client + date */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:18,paddingBottom:18,borderBottom:"1px solid #F1F5F9"}}>
             <div>
@@ -305,7 +307,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
           </div>
 
           {/* Intro */}
-          {q.intro && <div style={{fontSize:13,color:"#334155",lineHeight:1.8,marginBottom:18,padding:"12px 16px",background:"#F8FAFC",borderRadius:8,borderLeft:`3px solid ${q.accentColor}`}}>{q.intro}</div>}
+          {q.intro && <div style={{fontSize:13,color:"#334155",lineHeight:1.8,marginBottom:18,padding:"16px 20px",background:"#F8FAFC",borderRadius:8,borderLeft:`3px solid ${q.accentColor}`}}>{q.intro}</div>}
 
           {/* Scope */}
           {q.scope && (
@@ -314,7 +316,7 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
               <div style={{fontSize:13,color:"#334155",lineHeight:1.8}}>
                 {q.scope.split("·").map((s,i)=>(
                   <div key={i} style={{display:"flex",gap:8,marginBottom:4,alignItems:"flex-start"}}>
-                    {q.scope.includes("·")&&<span style={{color:q.accentColor,marginTop:1,flexShrink:0}}>✓</span>}
+                    {q.scope.includes("·")&&<span style={{color:q.accentColor,marginTop:1,flexShrink:0,display:"flex"}}><IE emoji="✓" Icon={Check} size={13} /></span>}
                     <span>{s.trim()}</span>
                   </div>
                 ))}
@@ -352,13 +354,13 @@ export default function QuoteBuilder({ vertId, onBack }: Props) {
           </div>
 
           {/* Terms */}
-          {q.terms&&<div style={{marginBottom:18,padding:"12px 14px",background:"#F8FAFC",borderRadius:7}}>
+          {q.terms&&<div style={{marginBottom:18,padding:"16px 18px",background:"#F8FAFC",borderRadius:7}}>
             <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>Terms & Conditions</div>
             <div style={{fontSize:11,color:"#64748B",lineHeight:1.6}}>{q.terms}</div>
           </div>}
 
           {/* Accept CTA */}
-          <div style={{textAlign:"center",padding:"14px",background:`${q.accentColor}10`,borderRadius:9,border:`1px solid ${q.accentColor}33`}}>
+          <div style={{textAlign:"center",padding:"20px 24px",background:`${q.accentColor}10`,borderRadius:9,border:`1px solid ${q.accentColor}33`}}>
             <div style={{fontSize:12,color:"#64748B",marginBottom:8}}>Ready to move forward?</div>
             <button onClick={()=>toast("Quote accepted — deal created and CRM updated","success")} style={{padding:"11px 32px",background:q.accentColor,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:"0.3px"}}>
               Accept This Proposal

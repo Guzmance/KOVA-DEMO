@@ -1,5 +1,10 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  DollarSign, TrendingUp, TrendingDown, AlertTriangle, Landmark, Target,
+  ArrowUpRight, MapPin, Zap, Package, Clock, BarChart3,
+} from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 import RevenueChart    from "@/components/financial/RevenueChart";
 import ExpenseRing     from "@/components/financial/ExpenseRing";
 import CashFlowChart   from "@/components/financial/CashFlowChart";
@@ -18,12 +23,12 @@ const GROSS_MARGIN  = GROSS_PROFIT.map((g, i) => Math.round(g / REVENUE[i] * 100
 const BAR_MAX       = Math.max(...REVENUE);
 
 const KPIs = [
-  { label:"Monthly Revenue",  value:"$102,400", delta:"+8.7%",  up:true,  icon:"💰", sub:"vs last month" },
-  { label:"Gross Profit",     value:"$31,200",  delta:"+4.2%",  up:true,  icon:"📈", sub:"30.5% margin" },
-  { label:"Outstanding AR",   value:"$48,600",  delta:"+12K",   up:false, icon:"⚠️", sub:"3 invoices overdue" },
-  { label:"Monthly Expenses", value:"$71,200",  delta:"+5.0%",  up:false, icon:"📉", sub:"vs last month" },
-  { label:"Cash on Hand",     value:"$186,400", delta:"+18K",   up:true,  icon:"🏦", sub:"Estimated runway: 2.6 mo" },
-  { label:"YTD Revenue",      value:"$500,600", delta:"+23.4%", up:true,  icon:"🎯", sub:"vs same period last year" },
+  { label:"Monthly Revenue",  value:"$102,400", delta:"+8.7%",  up:true,  Icon:DollarSign,    sub:"vs last month" },
+  { label:"Gross Profit",     value:"$31,200",  delta:"+4.2%",  up:true,  Icon:TrendingUp,    sub:"30.5% margin" },
+  { label:"Outstanding AR",   value:"$48,600",  delta:"+12K",   up:false, Icon:AlertTriangle, sub:"3 invoices overdue" },
+  { label:"Monthly Expenses", value:"$71,200",  delta:"+5.0%",  up:false, Icon:TrendingDown,  sub:"vs last month" },
+  { label:"Cash on Hand",     value:"$186,400", delta:"+18K",   up:true,  Icon:Landmark,      sub:"Estimated runway: 2.6 mo" },
+  { label:"YTD Revenue",      value:"$500,600", delta:"+23.4%", up:true,  Icon:Target,        sub:"vs same period last year" },
 ];
 
 const EXPENSE_CATS = [
@@ -43,16 +48,16 @@ const REVENUE_CATS = [
 ];
 
 const UPTAKES = [
-  { title:"Service contracts up 31%",      body:"Recurring service agreements increased from $40K to $52.4K — strongest growing segment. 3 new annual contracts signed in May.",  icon:"🚀", value:"+$12.4K" },
-  { title:"Tampa market expanding",         body:"Tampa territory generated $38K this month — up from $29K in April. Demand for construction services outpacing capacity.",          icon:"📍", value:"+$9K" },
-  { title:"On-time collections improving",  body:"DSO (days sales outstanding) dropped from 38 to 31 days. Faster payment collection improving cash position.",                   icon:"⚡", value:"-7 days DSO" },
+  { title:"Service contracts up 31%",      body:"Recurring service agreements increased from $40K to $52.4K — strongest growing segment. 3 new annual contracts signed in May.",  Icon:ArrowUpRight, value:"+$12.4K" },
+  { title:"Tampa market expanding",         body:"Tampa territory generated $38K this month — up from $29K in April. Demand for construction services outpacing capacity.",          Icon:MapPin,       value:"+$9K" },
+  { title:"On-time collections improving",  body:"DSO (days sales outstanding) dropped from 38 to 31 days. Faster payment collection improving cash position.",                   Icon:Zap,          value:"-7 days DSO" },
 ];
 
 const DOWNTAKES = [
-  { title:"Material costs rising",          body:"Materials jumped 18% in May — likely tied to lumber and copper index increases. Recommend reviewing Q3 job bids to adjust pricing.",  icon:"📦", value:"+$2,840" },
-  { title:"3 overdue invoices — $48,600",  body:"INV-2026-202 ($1,610, 36 days), INV-2026-198 ($22,400, 28 days), INV-2026-189 ($24,590, 22 days). Follow-up needed this week.",     icon:"⚠️", value:"$48,600 at risk" },
-  { title:"Margin compression",             body:"Average job margin dropped from 34% to 30.5% over 3 months. Labor cost increases not yet reflected in estimating templates.",          icon:"📉", value:"-3.5% margin" },
-  { title:"Overtime spend elevated",        body:"Overtime hours ran 14% above budget in May — two jobs hit delays. Scheduling review recommended before June 10 project kick-offs.",  icon:"🕐", value:"+$4,200 OT" },
+  { title:"Material costs rising",          body:"Materials jumped 18% in May — likely tied to lumber and copper index increases. Recommend reviewing Q3 job bids to adjust pricing.",  Icon:Package,       value:"+$2,840" },
+  { title:"3 overdue invoices — $48,600",  body:"INV-2026-202 ($1,610, 36 days), INV-2026-198 ($22,400, 28 days), INV-2026-189 ($24,590, 22 days). Follow-up needed this week.",     Icon:AlertTriangle, value:"$48,600 at risk" },
+  { title:"Margin compression",             body:"Average job margin dropped from 34% to 30.5% over 3 months. Labor cost increases not yet reflected in estimating templates.",          Icon:TrendingDown,  value:"-3.5% margin" },
+  { title:"Overtime spend elevated",        body:"Overtime hours ran 14% above budget in May — two jobs hit delays. Scheduling review recommended before June 10 project kick-offs.",  Icon:Clock,         value:"+$4,200 OT" },
 ];
 
 const RECENT_TRANSACTIONS = [
@@ -99,6 +104,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
   const [loading,  setLoading]  = useState(false);
   const [sections, setSections] = useState<SectionId[]>(DEFAULT_ORDER);
   const [dragged,  setDragged]  = useState<SectionId | null>(null);
+  const [barHover, setBarHover] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, loading]);
@@ -155,10 +161,14 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
     forecast: "col-span-2", transactions: "col-span-2",
   };
 
-  const TABS = [["overview","📊 Overview"],["pl","📋 P&L"],["cashflow","💳 Cash Flow"],["atlas","🧠 Atlas AI"]];
+  const TABS = [["overview","Overview"],["pl","P&L"],["cashflow","Cash Flow"],["atlas","Atlas AI"]];
 
   return (
     <div>
+      <style>{`
+        .fh-chart-outer { height: 44px !important; max-height: 44px !important; }
+        .fh-chart-bars  { height: 32px !important; max-height: 32px !important; }
+      `}</style>
       {/* ── Dark KPI header ── */}
       <div style={{ background:"linear-gradient(135deg,#0F172A,#1E3A5F)", borderRadius:12, padding:"16px 18px", marginBottom:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -175,7 +185,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
           {KPIs.map(k => (
             <div key={k.label} style={{ background:"rgba(255,255,255,0.07)", borderRadius:9, padding:"10px 13px" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
-                <span style={{ fontSize:13 }}>{k.icon}</span>
+                <k.Icon size={13} color="rgba(255,255,255,0.65)" />
                 <span style={{ fontSize:10, fontWeight:700, color: k.up ? "#10B981" : "#EF4444" }}>{k.delta}</span>
               </div>
               <div style={{ fontSize:15, fontWeight:700, color:"#F1F5F9" }}>{k.value}</div>
@@ -219,20 +229,29 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
             {/* Revenue bar chart */}
             <div style={{ marginBottom:18 }}>
               <div style={{ fontSize:11, fontWeight:600, color:"#64748B", marginBottom:8 }}>Revenue vs Expenses — 6 Month Trend</div>
-              <div style={{ display:"flex", gap:6, alignItems:"flex-end", height:110, marginBottom:6 }}>
+              <div className="fh-chart-outer" style={{ display:"flex", gap:4, alignItems:"flex-end", height:44, marginBottom:4 }}>
                 {MONTHS.map((m, i) => (
-                  <div key={m} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                    <div style={{ width:"100%", display:"flex", gap:2, alignItems:"flex-end", height:90 }}>
-                      <div style={{ flex:1, background:"#00C896", borderRadius:"3px 3px 0 0", height:`${REVENUE[i]/BAR_MAX*100}%`, minHeight:4 }} title={`Revenue: ${fv(REVENUE[i])}`} />
-                      <div style={{ flex:1, background:"#EF4444", opacity:0.65, borderRadius:"3px 3px 0 0", height:`${EXPENSES[i]/BAR_MAX*100}%`, minHeight:4 }} title={`Expenses: ${fv(EXPENSES[i])}`} />
+                  <div key={m} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, position:"relative", cursor:"default" }}
+                    onMouseEnter={() => setBarHover(i)}
+                    onMouseLeave={() => setBarHover(null)}>
+                    {barHover === i && (
+                      <div style={{ position:"absolute", bottom:"100%", left:"50%", transform:"translateX(-50%)", background:"#1E293B", color:"#fff", borderRadius:4, padding:"3px 6px", fontSize:9, whiteSpace:"nowrap", zIndex:20, marginBottom:3, boxShadow:"0 1px 6px rgba(0,0,0,0.2)", lineHeight:1.5, pointerEvents:"none" }}>
+                        <span style={{ color:"#4ADE80" }}>{fv(REVENUE[i])}</span>
+                        <span style={{ color:"#94A3B8", margin:"0 3px" }}>·</span>
+                        <span style={{ color:"#FCA5A5" }}>{fv(EXPENSES[i])}</span>
+                      </div>
+                    )}
+                    <div className="fh-chart-bars" style={{ width:"100%", display:"flex", gap:1, alignItems:"flex-end", height:32 }}>
+                      <div style={{ flex:1, background:"#00C896", borderRadius:"2px 2px 0 0", height:`${REVENUE[i]/BAR_MAX*100}%`, minHeight:3 }} />
+                      <div style={{ flex:1, background:"#EF4444", opacity:0.6, borderRadius:"2px 2px 0 0", height:`${EXPENSES[i]/BAR_MAX*100}%`, minHeight:3 }} />
                     </div>
-                    <div style={{ fontSize:9, color:"#94A3B8" }}>{m}</div>
+                    <div style={{ fontSize:8, color:"#94A3B8" }}>{m}</div>
                   </div>
                 ))}
               </div>
               <div style={{ display:"flex", gap:14, fontSize:10, color:"#64748B" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:4 }}><div style={{ width:10, height:10, background:"#00C896", borderRadius:2 }} />Revenue</div>
-                <div style={{ display:"flex", alignItems:"center", gap:4 }}><div style={{ width:10, height:10, background:"#EF4444", opacity:0.65, borderRadius:2 }} />Expenses</div>
+                <div style={{ display:"flex", alignItems:"center", gap:4 }}><div style={{ width:8, height:8, background:"#00C896", borderRadius:2 }} />Revenue</div>
+                <div style={{ display:"flex", alignItems:"center", gap:4 }}><div style={{ width:8, height:8, background:"#EF4444", opacity:0.65, borderRadius:2 }} />Expenses</div>
                 <div style={{ marginLeft:"auto", fontWeight:600, color:"#10B981" }}>Avg margin: {Math.round(GROSS_MARGIN.reduce((a,b)=>a+b,0)/GROSS_MARGIN.length)}%</div>
               </div>
             </div>
@@ -320,7 +339,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
 
             {/* AR aging */}
             <div style={{ marginTop:16, padding:"13px 14px", background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:9 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:"#B91C1C", marginBottom:8 }}>⚠ Accounts Receivable Aging</div>
+              <div style={{ fontSize:10, fontWeight:700, color:"#B91C1C", marginBottom:8, display:"flex", alignItems:"center", gap:5 }}><IE emoji="⚠️" Icon={AlertTriangle} size={12} />Accounts Receivable Aging</div>
               {[["0-30 days","$24,590","low"],["30-45 days","$22,400","medium"],["45-60 days","$1,610","high"]].map(([r, v, risk]) => (
                 <div key={r} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #FEE2E2" }}>
                   <span style={{ fontSize:11, color:"#64748B" }}>{r}</span>
@@ -340,7 +359,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
           <div style={{ display:"flex", flexDirection:"column", height:490 }}>
             {/* Agent header */}
             <div style={{ paddingBottom:10, borderBottom:"1px solid #F1F5F9", marginBottom:12, display:"flex", gap:10, alignItems:"center" }}>
-              <div style={{ width:34, height:34, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17 }}>📊</div>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center" }}><IE emoji="📊" Icon={BarChart3} size={17} color="#6366F1" /></div>
               <div>
                 <div style={{ fontSize:12, fontWeight:700, color:"#0F172A" }}>Atlas — Financial Intelligence</div>
                 <div style={{ fontSize:10, color:"#6366F1" }}>CFO · Your numbers. Plain English. Every day.</div>
@@ -359,7 +378,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
               {msgs.map((m, i) => (
                 <div key={i} style={{ display:"flex", gap:8, justifyContent: m.role==="user" ? "flex-end" : "flex-start", alignItems:"flex-end" }}>
                   {m.role==="assistant" && (
-                    <div style={{ width:28, height:28, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>📊</div>
+                    <div style={{ width:28, height:28, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><IE emoji="📊" Icon={BarChart3} size={13} color="#6366F1" /></div>
                   )}
                   <div style={{ maxWidth:"80%", padding:"9px 12px", borderRadius: m.role==="user" ? "9px 9px 2px 9px" : "9px 9px 9px 2px", background: m.role==="user" ? "#6366F1" : "#F8FAFC", color: m.role==="user" ? "#fff" : "#0F172A", fontSize:12, lineHeight:1.6 }}>
                     {m.content}
@@ -368,7 +387,7 @@ export default function FinancialHub({ vertId }: { vertId?: string }) {
               ))}
               {loading && (
                 <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
-                  <div style={{ width:28, height:28, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>📊</div>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background:"#6366F115", display:"flex", alignItems:"center", justifyContent:"center" }}><IE emoji="📊" Icon={BarChart3} size={13} color="#6366F1" /></div>
                   <div style={{ padding:"9px 14px", background:"#F8FAFC", borderRadius:"9px 9px 9px 2px", display:"flex", gap:4 }}>
                     {[0,1,2].map(j => <div key={j} style={{ width:5, height:5, borderRadius:"50%", background:"#6366F1", animation:`atlas-pulse 1.2s ${j*0.2}s ease-in-out infinite` }} />)}
                   </div>

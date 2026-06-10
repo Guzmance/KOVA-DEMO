@@ -1,6 +1,14 @@
 "use client";
 import { useState, useCallback } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import {
+  Mail, Phone, MapPin, FileText, CheckCircle2, Calendar, ClipboardList,
+  DollarSign, Target, MessageSquare, Zap, Brain, LayoutDashboard,
+  BarChart2, FolderOpen, User, Check, Bookmark
+} from "lucide-react";
+import { IE } from "@/lib/icon-mode";
+
+type LkIconType = React.ComponentType<any>;
 
 interface ContactFull {
   id:number; name:string; company:string; title:string; email:string;
@@ -93,10 +101,16 @@ const SAMPLE_NOTES = [
   {id:"n4",text:"Lost the Kendall staging quote in April to a cheaper local competitor ($7,400 vs our $7,400 — they just moved faster). She came back 3 weeks later. Speed and responsiveness are key differentiators for her team.",date:"Apr 22",by:"Michael"},
 ];
 
-const ACTIVITY_ICONS:Record<string,{icon:string,color:string}> = {
-  email:{icon:"✉️",color:"#3B9EFF"}, call:{icon:"📞",color:"#10B981"}, note:{icon:"📝",color:"#F59E0B"},
-  task:{icon:"☑️",color:"#64748B"}, meeting:{icon:"📅",color:"#A78BFA"}, quote:{icon:"📋",color:"#00C896"},
-  deal:{icon:"💰",color:"#EC4899"}, score:{icon:"🎯",color:"#EF4444"}, sms:{icon:"💬",color:"#6366F1"},
+const ACTIVITY_ICONS: Record<string,{icon: LkIconType, emoji: string, color:string}> = {
+  email:   {icon: Mail,          emoji:"✉️",  color:"#3B9EFF"},
+  call:    {icon: Phone,         emoji:"📞",  color:"#10B981"},
+  note:    {icon: FileText,      emoji:"📝",  color:"#F59E0B"},
+  task:    {icon: CheckCircle2,  emoji:"☑️",  color:"#64748B"},
+  meeting: {icon: Calendar,      emoji:"📅",  color:"#A78BFA"},
+  quote:   {icon: ClipboardList, emoji:"📋",  color:"#00C896"},
+  deal:    {icon: DollarSign,    emoji:"💰",  color:"#EC4899"},
+  score:   {icon: Target,        emoji:"🎯",  color:"#EF4444"},
+  sms:     {icon: MessageSquare, emoji:"💬",  color:"#6366F1"},
 };
 
 function fv(n:number){ return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:0}); }
@@ -145,17 +159,17 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
     setDraggingBlock(null);
   }, [draggingBlock]);
 
-  const TABS = [
-    {id:"overview",  label:"Overview",  icon:"🧩"},
-    {id:"activity",  label:"Activity",  icon:"⚡", count:SAMPLE_ACTIVITIES.length},
-    {id:"email",     label:"Email",     icon:"✉️", count:3},
-    {id:"tasks",     label:"Tasks",     icon:"☑️", count:SAMPLE_TASKS.filter(t=>!taskDone[t.id]).length},
-    {id:"notes",     label:"Notes",     icon:"📝", count:SAMPLE_NOTES.length},
-    {id:"calendar",  label:"Calendar",  icon:"📅", count:2},
-    {id:"quotes",    label:"Quotes",    icon:"📋", count:SAMPLE_QUOTES.length},
-    {id:"deals",     label:"Deals",     icon:"💰", count:SAMPLE_DEALS.length},
-    {id:"stats",     label:"Stats",     icon:"📊"},
-    {id:"docs",      label:"Documents", icon:"🗂️", count:6},
+  const TABS: {id:string; label:string; icon: LkIconType; emoji: string; count?: number}[] = [
+    {id:"overview",  label:"Overview",   icon:LayoutDashboard, emoji:"🧩"},
+    {id:"activity",  label:"Activity",   icon:Zap,             emoji:"⚡", count:SAMPLE_ACTIVITIES.length},
+    {id:"email",     label:"Email",      icon:Mail,             emoji:"✉️", count:3},
+    {id:"tasks",     label:"Tasks",      icon:CheckCircle2,     emoji:"☑️", count:SAMPLE_TASKS.filter(t=>!taskDone[t.id]).length},
+    {id:"notes",     label:"Notes",      icon:FileText,         emoji:"📝", count:SAMPLE_NOTES.length},
+    {id:"calendar",  label:"Calendar",   icon:Calendar,         emoji:"📅", count:2},
+    {id:"quotes",    label:"Quotes",     icon:ClipboardList,    emoji:"📋", count:SAMPLE_QUOTES.length},
+    {id:"deals",     label:"Deals",      icon:DollarSign,       emoji:"💰", count:SAMPLE_DEALS.length},
+    {id:"stats",     label:"Stats",      icon:BarChart2,        emoji:"📊"},
+    {id:"docs",      label:"Documents",  icon:FolderOpen,       emoji:"🗂️", count:6},
   ];
 
   const scoreColor = c.score>=80?"#15803D":c.score>=60?"#F59E0B":c.score>=40?"#3B9EFF":"#EF4444";
@@ -196,9 +210,9 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             </div>
             <div style={{fontSize:12,color:"#64748B",marginBottom:4}}>{c.title} · {c.company}</div>
             <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:11,color:"#64748B"}}>
-              <span>📧 {c.email}</span>
-              <span>📞 {c.phone}</span>
-              <span>📍 {c.city}, {c.state}</span>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><IE emoji="✉️" Icon={Mail} size={11} color="#94A3B8" />{c.email}</span>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><IE emoji="📞" Icon={Phone} size={11} color="#94A3B8" />{c.phone}</span>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><IE emoji="📍" Icon={MapPin} size={11} color="#94A3B8" />{c.city}, {c.state}</span>
             </div>
             <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
               {c.tags.map((t:string)=><span key={t} style={{fontSize:9,padding:"2px 7px",borderRadius:99,background:"#F1F5F9",color:"#64748B",fontWeight:500}}>{t}</span>)}
@@ -209,14 +223,14 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
           {/* Quick actions */}
           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
             <button style={{padding:"6px 12px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ New Deal</button>
-            <button style={{padding:"6px 12px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>📋 Create Quote</button>
-            <button style={{padding:"6px 12px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:6,fontSize:11,color:"#64748B",cursor:"pointer"}}>📧 Follow Up</button>
+            <button style={{padding:"6px 12px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><IE emoji="📋" Icon={ClipboardList} size={11} /> Create Quote</button>
+            <button style={{padding:"6px 12px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:6,fontSize:11,color:"#64748B",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><IE emoji="✉️" Icon={Mail} size={11} /> Follow Up</button>
           </div>
         </div>
 
         {/* AI Next Best Action */}
         <div style={{padding:"10px 18px",background:"#FFFBEB",borderTop:"1px solid #FDE68A",display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:13}}>🧠</span>
+          <IE emoji="🧠" Icon={Brain} size={13} color="#B45309" />
           <div style={{flex:1}}>
             <span style={{fontSize:10,fontWeight:700,color:"#B45309"}}>AI Recommendation: </span>
             <span style={{fontSize:11,color:"#92400E"}}>{c.nextLikelyAction}. Buy probability: {c.buyProbability}%. Best channel: {c.preferredChannel}. Response time: {c.responseTime}.</span>
@@ -228,7 +242,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
       <div style={{display:"flex",gap:0,borderBottom:"1px solid #E2E8F0",background:"#fff",borderRadius:"8px 8px 0 0",overflowX:"auto",marginBottom:0}}>
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 12px",fontSize:11,fontWeight:tab===t.id?600:400,border:"none",background:"none",cursor:"pointer",color:tab===t.id?P:"#64748B",borderBottom:tab===t.id?`2px solid ${P}`:"2px solid transparent",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
-            <span style={{fontSize:12}}>{t.icon}</span>{t.label}
+            <IE emoji={t.emoji} Icon={t.icon} size={12} />{t.label}
             {t.count!==undefined && <span style={{fontSize:9,background:tab===t.id?P+"15":"#F1F5F9",color:tab===t.id?P:"#94A3B8",padding:"1px 5px",borderRadius:99,fontWeight:700}}>{t.count}</span>}
           </button>
         ))}
@@ -243,10 +257,10 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
           const openDeals = SAMPLE_DEALS.filter(d=>d.stage!=="Closed Won");
           const openTasks = SAMPLE_TASKS.filter(t=>!(taskDone[t.id]));
 
-          const BLOCK_MAP: Record<BlockId, { title: string; icon: string; content: React.ReactNode }> = {
+          const BLOCK_MAP: Record<BlockId, { title: string; icon: LkIconType; emoji: string; content: React.ReactNode }> = {
             score: {
               title: "AI Lead Score",
-              icon: "🎯",
+              icon: Target, emoji: "🎯",
               content: (
                 <div style={{display:"flex",alignItems:"center",gap:14,padding:"6px 0"}}>
                   <div style={{width:56,height:56,borderRadius:"50%",background:scoreColor,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #fff",boxShadow:"0 0 0 3px "+scoreColor+"33",flexShrink:0}}>
@@ -262,14 +276,14 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             },
             activity: {
               title: "Recent Activity",
-              icon: "⚡",
+              icon: Zap, emoji: "⚡",
               content: (
                 <div style={{display:"flex",flexDirection:"column",gap:0}}>
                   {SAMPLE_ACTIVITIES.slice(0,3).map((a,i)=>{
-                    const ai = ACTIVITY_ICONS[a.type]||{icon:"📌",color:"#64748B"};
+                    const ai = ACTIVITY_ICONS[a.type]||{icon:Bookmark, emoji:"📌", color:"#64748B"};
                     return (
                       <div key={a.id} style={{display:"flex",gap:7,alignItems:"flex-start",padding:"5px 0",borderBottom:i<2?"1px solid #F8FAFC":"none"}}>
-                        <div style={{width:22,height:22,borderRadius:"50%",background:ai.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>{ai.icon}</div>
+                        <div style={{width:22,height:22,borderRadius:"50%",background:ai.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IE emoji={ai.emoji} Icon={ai.icon} size={10} color={ai.color} /></div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:11,fontWeight:600,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
                           <div style={{fontSize:10,color:"#94A3B8"}}>{a.date}</div>
@@ -282,7 +296,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             },
             deals: {
               title: "Open Deals",
-              icon: "💰",
+              icon: DollarSign, emoji: "💰",
               content: openDeals.length===0 ? (
                 <div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"10px 0"}}>No open deals</div>
               ) : (
@@ -301,7 +315,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             },
             info: {
               title: "Contact Info",
-              icon: "👤",
+              icon: User, emoji: "👤",
               content: (
                 <div style={{display:"flex",flexDirection:"column",gap:4}}>
                   {[["Email",c.email],["Phone",c.phone],["Company",c.company],["Location",c.city+", "+c.state]].map(([l,v])=>(
@@ -318,23 +332,23 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             },
             nextaction: {
               title: "Next Best Action",
-              icon: "🧠",
+              icon: Brain, emoji: "🧠",
               content: (
                 <div style={{padding:"8px 10px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:7}}>
                   <div style={{fontSize:11,color:"#92400E",lineHeight:1.6,marginBottom:5}}>{c.nextLikelyAction}.</div>
                   <div style={{display:"flex",gap:10,fontSize:10,color:"#B45309"}}>
-                    <span>📧 {c.preferredChannel}</span>
-                    <span>⚡ {c.responseTime}</span>
-                    <span>🎯 {c.buyProbability}% close</span>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:3}}><IE emoji="✉️" Icon={Mail} size={9} /> {c.preferredChannel}</span>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:3}}><IE emoji="⚡" Icon={Zap} size={9} /> {c.responseTime}</span>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:3}}><IE emoji="🎯" Icon={Target} size={9} /> {c.buyProbability}% close</span>
                   </div>
                 </div>
               )
             },
             tasks: {
               title: "Open Tasks",
-              icon: "☑️",
+              icon: CheckCircle2, emoji: "☑️",
               content: openTasks.length===0 ? (
-                <div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"10px 0"}}>All tasks complete ✓</div>
+                <div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"10px 0",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>All tasks complete <IE emoji="✅" Icon={Check} size={11} /></div>
               ) : (
                 <div style={{display:"flex",flexDirection:"column",gap:4}}>
                   {openTasks.slice(0,3).map(t=>(
@@ -381,7 +395,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
                       }}
                     >
                       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8}}>
-                        <span style={{fontSize:13}}>{b.icon}</span>
+                        <IE emoji={b.emoji} Icon={b.icon} size={13} />
                         <span style={{fontSize:11,fontWeight:700,color:"#0F172A"}}>{b.title}</span>
                         <span style={{marginLeft:"auto",fontSize:14,color:"#CBD5E1",cursor:"grab"}}>⋮⋮</span>
                       </div>
@@ -406,7 +420,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               </div>
             </div>
             {SAMPLE_ACTIVITIES.map((a,i)=>{
-              const ai = ACTIVITY_ICONS[a.type] || {icon:"📌",color:"#64748B"};
+              const ai = ACTIVITY_ICONS[a.type] || {icon:Bookmark,color:"#64748B"};
               return (
                 <div key={a.id} style={{display:"flex",gap:0,marginBottom:0}}>
                   {/* Timeline line */}
@@ -417,7 +431,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
                   {/* Content */}
                   <div style={{flex:1,paddingBottom:14}}>
                     <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:3,flexWrap:"wrap"}}>
-                      <span style={{fontSize:12}}>{ai.icon}</span>
+                      <IE emoji={ai.emoji} Icon={ai.icon} size={12} color={ai.color} />
                       <span style={{fontSize:9,padding:"1px 6px",borderRadius:3,background:ai.color+"15",color:ai.color,fontWeight:600,textTransform:"capitalize"}}>{a.type}</span>
                       <span style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{a.title}</span>
                       <span style={{fontSize:10,color:"#94A3B8",marginLeft:"auto"}}>{a.date} · {a.time}</span>
@@ -435,7 +449,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
         {tab==="email" && (
           <div>
             <div style={{padding:"10px 14px",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,marginBottom:12,display:"flex",gap:8,alignItems:"center"}}>
-              <span style={{fontSize:13}}>✉️</span>
+              <IE emoji="✉️" Icon={Mail} size={13} color="#1D4ED8" />
               <div style={{flex:1,fontSize:12,color:"#1D4ED8"}}>Email sync active — showing all threads with {c.email}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#1D4ED8",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>Compose</button>
             </div>
@@ -463,7 +477,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               const done = taskDone[t.id]||false;
               return (
                 <div key={t.id} onClick={()=>setTaskDone(p=>({...p,[t.id]:!p[t.id]}))} style={{display:"flex",gap:9,alignItems:"center",padding:"9px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:5,cursor:"pointer",opacity:done?0.5:1}}>
-                  <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${done?"#10B981":"#CBD5E1"}`,background:done?"#10B981":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#fff",fontSize:9,fontWeight:700}}>{done?"✓":""}</div>
+                  <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${done?"#10B981":"#CBD5E1"}`,background:done?"#10B981":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#fff"}}>{done ? <IE emoji="✓" Icon={Check} size={9} /> : null}</div>
                   <div style={{flex:1}}>
                     <div style={{fontSize:12,fontWeight:done?400:600,color:"#0F172A",textDecoration:done?"line-through":"none"}}>{t.title}</div>
                   </div>
@@ -495,7 +509,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
         {tab==="calendar" && (
           <div>
             <div style={{padding:"10px 14px",background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:8,marginBottom:12,display:"flex",gap:8,alignItems:"center"}}>
-              <span style={{fontSize:13}}>📅</span>
+              <IE emoji="📅" Icon={Calendar} size={13} color="#7C3AED" />
               <div style={{flex:1,fontSize:12,color:"#7C3AED"}}>Calendar sync shows meetings with {c.name}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#7C3AED",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>Schedule</button>
             </div>
@@ -611,7 +625,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
             </div>
 
             <div style={{marginTop:12,padding:"10px 14px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#B45309",marginBottom:3}}>🧠 AI Prediction</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#B45309",marginBottom:3,display:"flex",alignItems:"center",gap:4}}><IE emoji="🧠" Icon={Brain} size={10} /> AI Prediction</div>
               <div style={{fontSize:12,color:"#92400E",lineHeight:1.6}}>Sarah is {c.buyProbability}% likely to close the Coral Gables staging deal within 14 days. Engagement signals are strong: last email opened in under 90 minutes, 8 meetings held, 67% quote win rate. The annual photography retainer (Q-2026-009) has been viewed but not actioned — bundle it into the Tuesday follow-up. Priority: reach her before she routes the Broward listings to another vendor.</div>
             </div>
           </div>

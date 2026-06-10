@@ -1,8 +1,23 @@
 "use client";
 import { useState, useRef } from "react";
+import {
+  ShoppingCart, FileText, BarChart2, FilePen, Receipt,
+  Camera, Brain, Check, AlertTriangle, Smartphone,
+} from "lucide-react";
+import { IE, useIconMode } from "@/lib/icon-mode";
 import { DOC_TEMPLATES, TEMPLATE_TYPES, type DocTemplate } from "@/lib/templates";
 import { VERTICAL_CONFIG } from "@/lib/data";
 import { useToast, ToastContainer } from "@/components/ui/toast";
+
+type IconMap = Record<string, React.ComponentType<any>>;
+const DOC_ICON_MAP: IconMap = { ShoppingCart, FileText, BarChart2, FilePen, Receipt };
+const DOC_ICON_EMOJIS: Record<string, string> = { ShoppingCart: "🛒", FileText: "📝", BarChart2: "📊", FilePen: "📄", Receipt: "🧾" };
+function LkIcon({ m, n, size, color }: { m: IconMap; n: string; size: number; color?: string }) {
+  const { emojiMode } = useIconMode();
+  if (emojiMode && DOC_ICON_EMOJIS[n]) return <span style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{DOC_ICON_EMOJIS[n]}</span>;
+  const Ic = m[n];
+  return Ic ? <Ic size={size} color={color} /> : null;
+}
 
 interface LineItem { id:string; description:string; qty:number; unit:string; price:number; }
 
@@ -64,11 +79,11 @@ const SAMPLE_DOCS: DocRecord[] = [
 ];
 
 const DOC_TYPES = [
-  { id:"po",          label:"Purchase Orders",  icon:"🛒", color:"#F59E0B" },
-  { id:"invoice",     label:"Invoices",         icon:"📄", color:"#3B9EFF" },
-  { id:"estimate",    label:"Estimates",        icon:"📊", color:"#64748B" },
-  { id:"requisition", label:"Requisitions",     icon:"📝", color:"#A78BFA" },
-  { id:"receipt",     label:"Receipts",         icon:"🧾", color:"#10B981" },
+  { id:"po",          label:"Purchase Orders",  icon:"ShoppingCart", color:"#F59E0B" },
+  { id:"invoice",     label:"Invoices",         icon:"FileText",      color:"#3B9EFF" },
+  { id:"estimate",    label:"Estimates",        icon:"BarChart2",     color:"#64748B" },
+  { id:"requisition", label:"Requisitions",     icon:"FilePen",       color:"#A78BFA" },
+  { id:"receipt",     label:"Receipts",         icon:"Receipt",       color:"#10B981" },
 ];
 
 export default function DocumentCenter({ vertId }:{vertId:string}) {
@@ -139,18 +154,18 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
     <div>
       <button onClick={()=>{setShowScanner(false);setScanResult(null);}} style={{background:"none",border:"none",fontSize:12,color:"#64748B",cursor:"pointer",marginBottom:12}}>← Back</button>
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"20px",textAlign:"center"}}>
-        <div style={{fontSize:24,marginBottom:8}}>📱</div>
+        <div style={{marginBottom:8}}><IE emoji="📱" Icon={Smartphone} size={24} color="#0F172A" /></div>
         <div style={{fontSize:15,fontWeight:700,color:"#0F172A",marginBottom:16}}>Business Card Scanner</div>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>e.target.files?.[0]&&scanCard(e.target.files[0])} />
-        <button onClick={()=>fileRef.current?.click()} style={{padding:"10px 22px",background:"#0F172A",color:"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",marginBottom:12}}>📷 Take Photo / Upload</button>
-        {scanning && <div style={{padding:"20px",color:P,fontWeight:600}}>🧠 Reading card…</div>}
+        <button onClick={()=>fileRef.current?.click()} style={{padding:"10px 22px",background:"#0F172A",color:"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",gap:6,margin:"0 auto 12px"}}><IE emoji="📷" Icon={Camera} size={14} />Take Photo / Upload</button>
+        {scanning && <div style={{padding:"20px",color:P,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IE emoji="🧠" Icon={Brain} size={14} />Reading card…</div>}
         {scanResult && !scanResult.error && (
           <div style={{textAlign:"left",padding:"12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:9,marginTop:10}}>
-            <div style={{fontSize:11,color:"#15803D",fontWeight:700,marginBottom:6}}>✓ Extracted:</div>
+            <div style={{fontSize:11,color:"#15803D",fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:4}}><IE emoji="✅" Icon={Check} size={11} color="#15803D" />Extracted:</div>
             {Object.entries(scanResult).filter(([,v])=>v).map(([k,v])=>(
               <div key={k} style={{fontSize:12,marginBottom:3}}><span style={{color:"#64748B"}}>{k}: </span><strong>{String(v)}</strong></div>
             ))}
-            <button onClick={()=>{toast("Added to CRM and scoring queued");setShowScanner(false);}} style={{marginTop:10,padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:12,fontWeight:700,cursor:"pointer",width:"100%"}}>✓ Add to CRM + Score</button>
+            <button onClick={()=>{toast("Added to CRM and scoring queued");setShowScanner(false);}} style={{marginTop:10,padding:"8px 16px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:12,fontWeight:700,cursor:"pointer",width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><IE emoji="✅" Icon={Check} size={14} />Add to CRM + Score</button>
           </div>
         )}
       </div>
@@ -221,7 +236,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
                 return (
                   <div key={s} style={{display:"flex",alignItems:"center",flex:1}}>
                     <div style={{textAlign:"center",flex:1}}>
-                      <div style={{width:20,height:20,borderRadius:"50%",background:isPast||isCurrent?sc2.c:"#E2E8F0",margin:"0 auto 3px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>{isPast?"✓":isCurrent?"●":""}</div>
+                      <div style={{width:20,height:20,borderRadius:"50%",background:isPast||isCurrent?sc2.c:"#E2E8F0",margin:"0 auto 3px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>{isPast?<IE emoji="✓" Icon={Check} size={9} color="#fff" />:isCurrent?"●":""}</div>
                       <div style={{fontSize:8,color:isCurrent?sc2.c:"#94A3B8",fontWeight:isCurrent?700:400}}>{s.replace(/_/g," ")}</div>
                     </div>
                     {i<arr.length-1 && <div style={{width:20,height:2,background:isPast?sc2.c:"#E2E8F0",flexShrink:0}} />}
@@ -266,7 +281,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
                   <div><div style={{fontSize:10,color:"#64748B"}}>Paid</div><div style={{fontSize:14,fontWeight:700,color:"#15803D"}}>{fv(active.paidAmount||0)}</div></div>
                   <div><div style={{fontSize:10,color:"#64748B"}}>Remaining</div><div style={{fontSize:14,fontWeight:700,color:remaining>0?"#B91C1C":"#15803D"}}>{fv(remaining)}</div></div>
                 </div>
-                {active.status==="overdue" && <div style={{fontSize:11,color:"#B91C1C",marginTop:6}}>⚠ This invoice is past due. Agent follow-up recommended.</div>}
+                {active.status==="overdue" && <div style={{fontSize:11,color:"#B91C1C",marginTop:6,display:"flex",alignItems:"center",gap:4}}><IE emoji="⚠️" Icon={AlertTriangle} size={11} />This invoice is past due. Agent follow-up recommended.</div>}
               </div>
             )}
 
@@ -308,7 +323,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
           <div style={{fontSize:11,color:"#64748B",marginTop:1}}>PO · Invoices · Estimates · Requisitions · Receipts</div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setShowScanner(true)} style={{padding:"7px 12px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer"}}>📷 Scan Card</button>
+          <button onClick={()=>setShowScanner(true)} style={{padding:"7px 12px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><IE emoji="📷" Icon={Camera} size={13} />Scan Card</button>
           <button onClick={()=>createFromTemplate(tab)} style={{padding:"7px 14px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ New {typeConf?.label?.replace(/s$/,"")}</button>
         </div>
       </div>
@@ -319,7 +334,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
           const count = docs.filter(d=>d.type===t.id).length;
           return (
             <button key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:7,border:`1px solid ${tab===t.id?t.color:"#E2E8F0"}`,background:tab===t.id?t.color+"15":"#fff",color:tab===t.id?t.color:"#64748B",fontSize:11,fontWeight:tab===t.id?600:400,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-              <span>{t.icon}</span>{t.label}
+              <LkIcon m={DOC_ICON_MAP} n={t.icon} size={12} color={tab===t.id?t.color:"#64748B"} />{t.label}
               {count>0 && <span style={{fontSize:9,background:t.color+"20",color:t.color,padding:"1px 5px",borderRadius:99,fontWeight:700}}>{count}</span>}
             </button>
           );
@@ -339,7 +354,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
       {/* Doc list */}
       {filtered.length===0 && (
         <div style={{textAlign:"center",padding:"40px",border:"1px dashed #E2E8F0",borderRadius:10,color:"#94A3B8"}}>
-          <div style={{fontSize:28,marginBottom:8}}>{typeConf?.icon}</div>
+          <div style={{marginBottom:8}}>{typeConf && <LkIcon m={DOC_ICON_MAP} n={typeConf.icon} size={28} color="#94A3B8" />}</div>
           <div style={{fontSize:13,fontWeight:600,color:"#64748B",marginBottom:4}}>No {typeConf?.label?.toLowerCase()} yet</div>
           <button onClick={()=>createFromTemplate(tab)} style={{padding:"8px 18px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>Create First</button>
         </div>
@@ -356,7 +371,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
                   <span style={{fontSize:10,fontFamily:"monospace",color:"#94A3B8"}}>{d.number}</span>
                   <span style={{fontSize:9,padding:"2px 7px",borderRadius:99,fontWeight:600,background:sc2.bg,color:sc2.c}}>{d.status.replace(/_/g," ")}</span>
                   {d.vendor && <span style={{fontSize:10,color:"#64748B"}}>→ {d.vendor}</span>}
-                  {d.approvedBy && <span style={{fontSize:10,color:"#15803D"}}>✓ {d.approvedBy}</span>}
+                  {d.approvedBy && <span style={{fontSize:10,color:"#15803D",display:"flex",alignItems:"center",gap:3}}><IE emoji="✅" Icon={Check} size={9} color="#15803D" />{d.approvedBy}</span>}
                 </div>
                 <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:2}}>{d.title||"Untitled"}</div>
                 <div style={{fontSize:11,color:"#64748B"}}>{d.contact||d.vendor||"—"} · {d.created}</div>

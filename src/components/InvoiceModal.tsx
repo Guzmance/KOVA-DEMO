@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X, Check, Download, Send, DollarSign } from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 import { Button } from "@/components/ui/button";
 import { useToast, ToastContainer } from "@/components/ui/toast";
 
@@ -43,13 +44,13 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.55)" }}>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" style={{ maxHeight: "92vh", overflowY: "auto" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full !max-w-xl overflow-hidden" style={{ maxHeight: "92vh", overflowY: "auto" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between !px-6 !py-5 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: q.accentColor }}>
-              <DollarSign size={15} className="text-white" />
+              <IE emoji="💰" Icon={DollarSign} size={15} className="text-white" />
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">{invNumber}</p>
@@ -67,14 +68,14 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#64748B]">Draft</span>
             )}
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-              <X size={16} className="text-muted-foreground" />
+              <IE emoji="✕" Icon={X} size={16} className="text-muted-foreground" />
             </button>
           </div>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="!p-6 !space-y-5">
           {/* Color bar */}
-          <div className="rounded-xl p-4 text-white" style={{ background: q.accentColor }}>
+          <div className="rounded-xl p-5 text-white" style={{ background: q.accentColor }}>
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest opacity-75 mb-0.5">Invoice</p>
@@ -90,13 +91,13 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
 
           {/* Bill to + dates */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+            <div className="!p-4 rounded-lg" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Bill To</p>
               <p className="text-sm font-semibold text-foreground">{q.contact || "—"}</p>
               {q.company && <p className="text-xs text-muted-foreground">{q.company}</p>}
               {q.email && <p className="text-xs text-muted-foreground">{q.email}</p>}
             </div>
-            <div className="p-3 rounded-lg space-y-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+            <div className="!p-4 rounded-lg space-y-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Dates</p>
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">Issued</span><span className="font-medium">{today}</span></div>
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">Due</span><span className="font-medium text-[#B45309]">{dueDate}</span></div>
@@ -145,7 +146,7 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
 
           {/* Terms */}
           {q.terms && (
-            <div className="p-3 rounded-lg text-xs text-muted-foreground" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+            <div className="!p-4 rounded-lg text-xs text-muted-foreground" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
               <p className="font-semibold text-foreground text-[10px] uppercase tracking-wide mb-1">Terms</p>
               {q.terms}
             </div>
@@ -153,14 +154,14 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
 
           {/* Status banners */}
           {status === "paid" && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F0FDF4] border border-[#86EFAC]">
-              <Check size={14} className="text-[#15803D]" />
+            <div className="flex items-center gap-2 !p-4 rounded-lg bg-[#F0FDF4] border border-[#86EFAC]">
+              <IE emoji="✅" Icon={Check} size={14} className="text-[#15803D]" />
               <p className="text-xs font-semibold text-[#15803D]">Payment received — invoice marked as paid</p>
             </div>
           )}
           {status === "sent" && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE]">
-              <Send size={14} className="text-[#1D4ED8]" />
+            <div className="flex items-center gap-2 !p-4 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE]">
+              <IE emoji="📤" Icon={Send} size={14} className="text-[#1D4ED8]" />
               <p className="text-xs font-semibold text-[#1D4ED8]">Invoice sent to {q.email || q.contact}</p>
             </div>
           )}
@@ -168,11 +169,11 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
           {/* Actions */}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1 gap-1.5 text-xs h-9" onClick={() => toast("PDF export ready in production","info")}>
-              <Download size={13} />PDF
+              <IE emoji="⬇️" Icon={Download} size={13} />PDF
             </Button>
             {status === "draft" && (
               <Button className="flex-1 gap-1.5 text-xs h-9 bg-[#0F172A] hover:bg-[#0F172A]/90" onClick={handleSend} disabled={sending}>
-                <Send size={13} />
+                <IE emoji="📤" Icon={Send} size={13} />
                 {sending ? "Sending…" : "Send Invoice"}
               </Button>
             )}
@@ -182,7 +183,7 @@ export default function InvoiceModal({ quote: q, onClose }: Props) {
                 style={{ background: "#15803D" }}
                 onClick={() => setStatus("paid")}
               >
-                <Check size={13} />Mark Paid
+                <IE emoji="✅" Icon={Check} size={13} />Mark Paid
               </Button>
             )}
           </div>

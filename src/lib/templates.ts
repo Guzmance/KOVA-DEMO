@@ -55,9 +55,9 @@ export const DOC_TEMPLATES: DocTemplate[] = [
 ];
 
 export const TEMPLATE_TYPES = [
-  { id:"po",        label:"Purchase Orders",  icon:"🛒", count:8,  color:"#F59E0B" },
-  { id:"invoice",   label:"Invoices",         icon:"📄", count:10, color:"#3B9EFF" },
-  { id:"estimate",  label:"Estimates",        icon:"📊", count:7,  color:"#64748B" },
-  { id:"receipt",   label:"Receipts",         icon:"🧾", count:5,  color:"#10B981" },
-  { id:"workorder", label:"Work Orders",      icon:"🔧", count:4,  color:"#F59E0B" },
+  { id:"po",        label:"Purchase Orders",  icon:"ShoppingCart",  count:8,  color:"#F59E0B" },
+  { id:"invoice",   label:"Invoices",         icon:"FileText",       count:10, color:"#3B9EFF" },
+  { id:"estimate",  label:"Estimates",        icon:"BarChart2",      count:7,  color:"#64748B" },
+  { id:"receipt",   label:"Receipts",         icon:"Receipt",        count:5,  color:"#10B981" },
+  { id:"workorder", label:"Work Orders",      icon:"Wrench",         count:4,  color:"#F59E0B" },
 ];

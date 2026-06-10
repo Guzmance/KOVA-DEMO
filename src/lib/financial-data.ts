@@ -72,12 +72,12 @@ export const MONTHLY_REVENUE: MonthlyRevenue[] = [
 ];
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  { label: "Personnel",          amount: 22_400, color: "#0F172A", icon: "👤", change:  3.2 },
-  { label: "Cost of Services",   amount: 14_600, color: "#3B9EFF", icon: "⚙️", change: -1.8 },
-  { label: "Marketing",          amount:  6_800, color: "#00C896", icon: "📣", change: 12.4 },
-  { label: "Software & Tools",   amount:  2_980, color: "#A78BFA", icon: "💻", change:  0.0 },
-  { label: "Operations",         amount:  2_100, color: "#F59E0B", icon: "🏢", change:  5.1 },
-  { label: "Other",              amount:    900, color: "#CBD5E1", icon: "📦", change: -8.3 },
+  { label: "Personnel",          amount: 22_400, color: "#0F172A", icon: "Users",     change:  3.2 },
+  { label: "Cost of Services",   amount: 14_600, color: "#3B9EFF", icon: "Settings2", change: -1.8 },
+  { label: "Marketing",          amount:  6_800, color: "#00C896", icon: "Megaphone",  change: 12.4 },
+  { label: "Software & Tools",   amount:  2_980, color: "#A78BFA", icon: "Monitor",    change:  0.0 },
+  { label: "Operations",         amount:  2_100, color: "#F59E0B", icon: "Building2",  change:  5.1 },
+  { label: "Other",              amount:    900, color: "#CBD5E1", icon: "Package",     change: -8.3 },
 ];
 
 export const RECENT_TRANSACTIONS: Transaction[] = [

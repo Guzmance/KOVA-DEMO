@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef } from "react";
 import { VERTICAL_CONFIG } from "@/lib/data";
-import { Send, Check } from "lucide-react";
+import { Send, Check, Sparkles } from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 
 interface LineItem {
   id: string; description: string; qty: number; unit: string; price: number; category: string;
@@ -197,7 +198,7 @@ export default function EstimateBuilder({ vertId }: Props) {
         <button onClick={() => setView("builder")} style={{ background: "none", border: "none", fontSize: 12, color: "#64748B", cursor: "pointer" }}>← Edit</button>
         <div style={{ display: "flex", gap: 6 }}>
           <button onClick={handleSave} style={{ padding: "7px 14px", background: "#0F172A", color: "#fff", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            {saved ? <><Check size={12} /> Saved!</> : "Save Estimate"}
+            {saved ? <><IE emoji="✅" Icon={Check} size={12} /> Saved!</> : "Save Estimate"}
           </button>
         </div>
       </div>
@@ -292,11 +293,11 @@ export default function EstimateBuilder({ vertId }: Props) {
           </div>
           <div style={{ display: "flex", gap: 5 }}>
             <button onClick={() => setAgentOpen(!agentOpen)} style={{ padding: "7px 12px", background: agentOpen ? P + "15" : "#F8FAFC", color: agentOpen ? P : "#64748B", border: `1px solid ${agentOpen ? P + "44" : "#E2E8F0"}`, borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              <span>✨</span>{agentOpen ? "Hide Agent" : "Build with Agent"}
+              <IE emoji="✨" Icon={Sparkles} size={12} />{agentOpen ? "Hide Agent" : "Build with Agent"}
             </button>
             <button onClick={() => setView("preview")} style={{ padding: "7px 14px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Preview</button>
             <button onClick={handleSave} style={{ padding: "7px 14px", background: "#0F172A", color: "#fff", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              {saved ? <><Check size={12} /> Saved!</> : "Save"}
+              {saved ? <><IE emoji="✅" Icon={Check} size={12} /> Saved!</> : "Save"}
             </button>
           </div>
         </div>
@@ -415,7 +416,7 @@ export default function EstimateBuilder({ vertId }: Props) {
         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", position: "sticky", top: 0 }}>
           {/* Agent header */}
           <div style={{ padding: "10px 12px", background: `linear-gradient(135deg,${P}18,${P}08)`, borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", flexShrink: 0 }}>✨</div>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><IE emoji="✨" Icon={Sparkles} size={12} color="#fff" /></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>Estimate Agent</div>
               <div style={{ fontSize: 10, color: "#64748B" }}>Pre-fills your estimate live</div>
@@ -437,7 +438,7 @@ export default function EstimateBuilder({ vertId }: Props) {
             {chat.map((m, i) => (
               <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
                 {m.role === "assistant" && (
-                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", flexShrink: 0 }}>✨</div>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><IE emoji="✨" Icon={Sparkles} size={10} color="#fff" /></div>
                 )}
                 <div style={{
                   maxWidth: "82%", padding: "8px 10px", fontSize: 11, lineHeight: 1.6,
@@ -452,7 +453,7 @@ export default function EstimateBuilder({ vertId }: Props) {
             ))}
             {typing && (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", flexShrink: 0 }}>✨</div>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Sparkles size={10} color="#fff" /></div>
                 <div style={{ padding: "8px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "10px 10px 10px 2px", display: "flex", gap: 3 }}>
                   {[0, 1, 2].map(j => (
                     <div key={j} style={{ width: 5, height: 5, borderRadius: "50%", background: P, animation: `kpulse 1.2s ${j * 0.2}s ease-in-out infinite` }} />
@@ -475,7 +476,7 @@ export default function EstimateBuilder({ vertId }: Props) {
             />
             <button onClick={() => sendMessage()} disabled={typing || !input.trim()}
               style={{ padding: "7px 10px", background: input.trim() && !typing ? "#0F172A" : "#E2E8F0", color: input.trim() && !typing ? "#fff" : "#94A3B8", border: "none", borderRadius: 7, cursor: "pointer", display: "flex", alignItems: "center" }}>
-              <Send size={12} />
+              <IE emoji="📤" Icon={Send} size={12} />
             </button>
           </div>
         </div>

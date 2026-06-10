@@ -1,5 +1,14 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import {
+  LayoutDashboard, Users, Building2, TrendingUp, ClipboardList, Ruler,
+  FolderOpen, DollarSign, Map, Workflow, MessageSquare, LayoutList,
+  BarChart2, Zap, Settings, Search, Bell, Sparkles, Upload, Camera,
+  RefreshCw, Play, Check, CheckCircle2, Brain, BarChart3,
+  Phone, Mail, FileText, Home, HeartPulse, Factory,
+  Inbox, Filter, Settings2, Radio, Clock, Smile,
+} from "lucide-react";
+import { IE, useIconMode } from "@/lib/icon-mode";
 import { CONTACTS, COMPANIES, ALL_DEALS, ALL_STAGES, ACTIVITIES, PIPELINE_STAGES, VERTICAL_CONFIG, ALL_VERTICALS } from "@/lib/data";
 import type { Contact, Company, Deal, View, Modal } from "@/lib/types";
 import QuoteBuilder from "@/components/QuoteBuilder";
@@ -14,6 +23,22 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useToast, ToastContainer } from "@/components/ui/toast";
 
+type IconMap = Record<string, React.ComponentType<any>>;
+
+const VERT_ICON_MAP: IconMap = { Home, HeartPulse, Factory };
+const ACT_ICON_MAP:  IconMap = { Phone, Mail, TrendingUp, FileText };
+const PIPE_ICON_MAP: IconMap = { Inbox, Filter, Search, Settings2, Brain, ClipboardList, Radio, Users, Clock };
+const VERT_ICON_EMOJIS: Record<string, string> = { Home: "🏠", HeartPulse: "🏥", Factory: "🏭" };
+const ACT_ICON_EMOJIS:  Record<string, string> = { Phone: "📞", Mail: "✉️", TrendingUp: "📈", FileText: "📝" };
+const PIPE_ICON_EMOJIS: Record<string, string> = { Inbox: "📥", Filter: "🧹", Search: "🔍", Settings2: "⚙️", Brain: "🧠", ClipboardList: "📋", Radio: "📡", Users: "👥", Clock: "⏰" };
+
+function LkIcon({ m, n, size, color, emoji }: { m: IconMap; n: string; size: number; color?: string; emoji?: string }) {
+  const { emojiMode } = useIconMode();
+  if (emojiMode && emoji) return <span style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{emoji}</span>;
+  const Ic = m[n];
+  return Ic ? <Ic size={size} color={color} /> : null;
+}
+
 function copyDeals(id: string): Record<string, Deal[]> {
   return Object.fromEntries(
     Object.entries(ALL_DEALS[id] || {}).map(([k, v]) => [k, [...(v as Deal[])]])
@@ -23,6 +48,7 @@ function copyDeals(id: string): Record<string, Deal[]> {
 type ExtView = View | "pipeline" | "ask" | "quotes" | "docs" | "map" | "finance" | "estimates";
 
 export default function CRM() {
+  const { emojiMode, toggle } = useIconMode();
   const [vertId, setVertId]       = useState("real_estate");
   const [vertOpen, setVertOpen]   = useState(false);
   const [view, setView]           = useState<ExtView>("dashboard");
@@ -245,7 +271,7 @@ export default function CRM() {
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Recent Activity</div>
           {activities.slice(0,4).map((a,i)=>(
             <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 0",borderBottom:i<3?"1px solid #F1F5F9":"none"}}>
-              <div style={{width:24,height:24,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0}}>{a.icon}</div>
+              <div style={{width:24,height:24,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><LkIcon m={ACT_ICON_MAP} n={a.icon} size={11} emoji={ACT_ICON_EMOJIS[a.icon]} /></div>
               <div><div style={{fontSize:11,color:"#1E293B",lineHeight:1.4}}><strong>{a.contact}</strong> — {a.text.substring(0,52)}…</div><div style={{fontSize:10,color:"#94A3B8",marginTop:1}}>{a.time}</div></div>
             </div>
           ))}
@@ -266,18 +292,18 @@ export default function CRM() {
       {/* Quick actions row */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
         <button onClick={()=>goView("pipeline")} style={{padding:"12px",background:"linear-gradient(135deg,#0F172A,#1E293B)",border:"none",borderRadius:10,cursor:"pointer",textAlign:"left"}}>
-          <div style={{fontSize:18,marginBottom:4}}>🔄</div>
+          <div style={{marginBottom:4}}><IE emoji="🔄" Icon={RefreshCw} size={18} color="#F1F5F9" /></div>
           <div style={{fontSize:12,fontWeight:700,color:"#F1F5F9"}}>Run Pipeline</div>
           <div style={{fontSize:10,color:"#64748B",marginTop:1}}>Watch data flow live</div>
         </button>
         <button onClick={()=>goView("ask")} style={{padding:"12px",background:`linear-gradient(135deg,${P}22,${P}11)`,border:`1px solid ${P}33`,borderRadius:10,cursor:"pointer",textAlign:"left"}}>
-          <div style={{fontSize:18,marginBottom:4}}>💬</div>
+          <div style={{marginBottom:4}}><IE emoji="💬" Icon={MessageSquare} size={18} color={P} /></div>
           <div style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>Ask Your Data</div>
           <div style={{fontSize:10,color:"#64748B",marginTop:1}}>Claude answers live</div>
         </button>
         <button onClick={scoreAll} disabled={scoringAll} style={{padding:"12px",background:scoringAll?"#F8FAFC":"linear-gradient(135deg,#F0FDF4,#DCFCE7)",border:"1px solid #86EFAC",borderRadius:10,cursor:"pointer",textAlign:"left"}}>
-          <div style={{fontSize:18,marginBottom:4}}>🧠</div>
-          <div style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>{scoringAll?`Scoring ${scoreAllIdx}/${contacts.length}…`:scoreAllDone?"All Scored ✓":"Score All Leads"}</div>
+          <div style={{marginBottom:4}}><IE emoji="🧠" Icon={Brain} size={18} color="#15803D" /></div>
+          <div style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>{scoringAll?`Scoring ${scoreAllIdx}/${contacts.length}…`:scoreAllDone?"All Scored":"Score All Leads"}</div>
           <div style={{fontSize:10,color:"#64748B",marginTop:1}}>{contacts.length} contacts · Claude AI</div>
         </button>
       </div>
@@ -307,7 +333,7 @@ export default function CRM() {
           </div>
         </div>
         <button onClick={runPipeline} disabled={pipeRunning} style={{padding:"9px 20px",background:pipeRunning?"#334155":P,color:pipeRunning?"#94A3B8":"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-          {pipeRunning?<><span className="kspin">⟳</span> Running…</>:"▶ Run Pipeline"}
+          {pipeRunning?<><RefreshCw size={14} style={{animation:"kspin 1s linear infinite"}} /> Running…</>:<><IE emoji="▶️" Icon={Play} size={14} /> Run Pipeline</>}
         </button>
       </div>
 
@@ -339,15 +365,15 @@ export default function CRM() {
               transition:"all .3s",
             }}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:34,height:34,borderRadius:8,background:active?P+"20":done?P+"15":"#F8FAFC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-                  {active?<span className="kspin">{stage.icon}</span>:stage.icon}
+                <div style={{width:34,height:34,borderRadius:8,background:active?P+"20":done?P+"15":"#F8FAFC",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,animation:active?"kspin 1s linear infinite":undefined}}>
+                  <LkIcon m={PIPE_ICON_MAP} n={stage.icon} size={16} color={active||done?P:"#94A3B8"} emoji={PIPE_ICON_EMOJIS[stage.icon]} />
                 </div>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
                     <div style={{display:"flex",alignItems:"center",gap:7}}>
                       <span style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{stage.label}</span>
                       {active && <span style={{fontSize:9,background:P+"20",color:P,padding:"1px 7px",borderRadius:99,fontWeight:700}}>ACTIVE</span>}
-                      {done  && <span style={{fontSize:9,background:"#F0FDF4",color:"#15803D",padding:"1px 7px",borderRadius:99,fontWeight:700}}>DONE ✓</span>}
+                      {done  && <span style={{fontSize:9,background:"#F0FDF4",color:"#15803D",padding:"1px 7px",borderRadius:99,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}>DONE <IE emoji="✓" Icon={Check} size={8} /></span>}
                     </div>
                     <span style={{fontSize:11,fontWeight:700,color:done?"#15803D":active?P:"#94A3B8"}}>
                       {done?"100%":active?Math.round(pct)+"%":"—"}
@@ -367,7 +393,7 @@ export default function CRM() {
       {pipeDone && (
         <div className="kflow" style={{marginTop:14,padding:"14px 16px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:"#15803D"}}>✓ Pipeline complete</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#15803D",display:"flex",alignItems:"center",gap:5}}><IE emoji="✅" Icon={Check} size={14} color="#15803D" />Pipeline complete</div>
             <div style={{fontSize:11,color:"#64748B",marginTop:2}}>{pipeRecord?.fn} {pipeRecord?.ln} processed in ~9 seconds · Score assigned · Outreach queued</div>
           </div>
           <button onClick={runPipeline} style={{padding:"7px 16px",background:"#15803D",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>Run Again</button>
@@ -389,7 +415,7 @@ export default function CRM() {
   const renderAsk = () => (
     <div>
       <div style={{marginBottom:16,padding:"14px 16px",background:`linear-gradient(135deg,${P}18,${P}08)`,border:`1px solid ${P}33`,borderRadius:12}}>
-        <div style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>💬 Ask Your {vert.label} Data</div>
+        <div style={{fontSize:14,fontWeight:700,color:"#0F172A",display:"flex",alignItems:"center",gap:6}}><IE emoji="💬" Icon={MessageSquare} size={14} />Ask Your {vert.label} Data</div>
         <div style={{fontSize:11,color:"#64748B",marginTop:3}}>Claude reads your live contacts, deals, and scores — then answers in plain English.</div>
       </div>
 
@@ -412,14 +438,14 @@ export default function CRM() {
             </div>
             {/* Answer */}
             <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-              <div style={{width:28,height:28,borderRadius:"50%",background:"#0F172A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,color:"#fff"}}>⚡</div>
+              <div style={{width:28,height:28,borderRadius:"50%",background:"#0F172A",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IE emoji="⚡" Icon={Zap} size={12} color="#fff" /></div>
               <div style={{flex:1,padding:"10px 13px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:"10px 10px 10px 2px",fontSize:12,color:"#0F172A",lineHeight:1.7}}>{item.a}</div>
             </div>
           </div>
         ))}
         {nlLoading && (
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <div style={{width:28,height:28,borderRadius:"50%",background:"#0F172A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,color:"#fff"}}>⚡</div>
+            <div style={{width:28,height:28,borderRadius:"50%",background:"#0F172A",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IE emoji="⚡" Icon={Zap} size={12} color="#fff" /></div>
             <div style={{padding:"10px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:"10px 10px 10px 2px",display:"flex",gap:4}}>
               {[0,1,2].map(j=><div key={j} style={{width:6,height:6,borderRadius:"50%",background:P,animation:`kpulse 1.2s ${j*0.2}s ease-in-out infinite`}} />)}
             </div>
@@ -430,7 +456,7 @@ export default function CRM() {
 
       {nlHistory.length===0&&!nlLoading&&(
         <div style={{textAlign:"center",padding:"30px",color:"#94A3B8",border:"1px dashed #E2E8F0",borderRadius:10,marginBottom:14}}>
-          <div style={{fontSize:28,marginBottom:8}}>💬</div>
+          <div style={{marginBottom:8}}><IE emoji="💬" Icon={MessageSquare} size={28} color="#94A3B8" /></div>
           <div style={{fontSize:13,fontWeight:600,color:"#64748B",marginBottom:4}}>Ask anything about your {vert.label} data</div>
           <div style={{fontSize:11}}>Try one of the quick questions above or type your own</div>
         </div>
@@ -453,14 +479,14 @@ export default function CRM() {
         {["all","new","contacted","qualified","customer"].map(f=>(
           <button key={f} onClick={()=>setCFilter(f)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:"1px solid",borderColor:cFilter===f?P:"#E2E8F0",background:cFilter===f?P+"15":"#fff",color:cFilter===f?P:"#64748B",cursor:"pointer"}}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>
         ))}
-        <button onClick={()=>setShowScanModal(true)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:`1px solid ${P}44`,background:P+"15",color:P,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:3}}>📷 Scan Card</button>
+        <button onClick={()=>setShowScanModal(true)} style={{fontSize:10,padding:"3px 9px",borderRadius:99,border:`1px solid ${P}44`,background:P+"15",color:P,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:3}}><IE emoji="📷" Icon={Camera} size={11} />Scan Card</button>
         <span style={{fontSize:10,color:"#94A3B8",flex:1}}>{filteredContacts.length} contacts</span>
         <div style={{display:"flex",background:"#F1F5F9",borderRadius:7,padding:2,gap:1}}>
-          <button onClick={()=>setContactsView("list")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="list"?"#fff":"transparent",color:contactsView==="list"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="list"?600:400}}>☰ List</button>
-          <button onClick={()=>setContactsView("map")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="map"?"#fff":"transparent",color:contactsView==="map"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="map"?600:400}}>🗺 Map</button>
+          <button onClick={()=>setContactsView("list")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="list"?"#fff":"transparent",color:contactsView==="list"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="list"?600:400,display:"flex",alignItems:"center",gap:4}}><IE emoji="📋" Icon={LayoutList} size={12} />List</button>
+          <button onClick={()=>setContactsView("map")} style={{fontSize:11,padding:"4px 10px",borderRadius:5,border:"none",background:contactsView==="map"?"#fff":"transparent",color:contactsView==="map"?"#0F172A":"#64748B",cursor:"pointer",fontWeight:contactsView==="map"?600:400,display:"flex",alignItems:"center",gap:4}}><IE emoji="🗺️" Icon={Map} size={12} />Map</button>
         </div>
         <button onClick={scoreAll} disabled={scoringAll} style={{fontSize:11,padding:"4px 12px",background:scoringAll?P+"10":"#0F172A",color:scoringAll?P:"#fff",border:scoringAll?`1px solid ${P}44`:"none",borderRadius:7,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
-          {scoringAll?<><span style={{animation:"kspin 1s linear infinite",display:"inline-block"}}>⟳</span> {scoreAllIdx}/{contacts.length}</>:scoreAllDone?"✓ All Scored":"🧠 Score All"}
+          {scoringAll?<><RefreshCw size={12} style={{animation:"kspin 1s linear infinite"}} /> {scoreAllIdx}/{contacts.length}</>:scoreAllDone?<><IE emoji="✅" Icon={Check} size={12} /> All Scored</>:<><IE emoji="🧠" Icon={Brain} size={12} /> Score All</>}
         </button>
       </div>
       {contactsView==="map" && <MapView vertId={vertId} />}
@@ -482,7 +508,7 @@ export default function CRM() {
       ))}
       {contactsView==="list" && scoreAllDone&&(
         <div style={{marginTop:10,padding:"10px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8,fontSize:12,color:"#15803D",fontWeight:600}}>
-          ✓ All {contacts.length} contacts scored by Claude — click any score ring to see the full breakdown
+          <span style={{display:"inline-flex",alignItems:"center",gap:5}}><IE emoji="✅" Icon={Check} size={12} /> All {contacts.length} contacts scored by Claude — click any score ring to see the full breakdown</span>
         </div>
       )}
     </div>
@@ -527,7 +553,7 @@ export default function CRM() {
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Outreach</div>
           <div style={{display:"flex",gap:2,marginBottom:8,background:"#F1F5F9",borderRadius:7,padding:3}}>
             {(["sms","email","call"] as const).map(t=>(
-              <button key={t} onClick={()=>setOTab(t)} style={{flex:1,padding:"5px",borderRadius:5,border:"none",background:oTab===t?"#fff":"transparent",color:oTab===t?"#0F172A":"#64748B",fontSize:11,fontWeight:oTab===t?600:400,cursor:"pointer"}}>{t==="sms"?"💬 SMS":t==="email"?"✉️ Email":"📞 Call"}</button>
+              <button key={t} onClick={()=>setOTab(t)} style={{flex:1,padding:"5px",borderRadius:5,border:"none",background:oTab===t?"#fff":"transparent",color:oTab===t?"#0F172A":"#64748B",fontSize:11,fontWeight:oTab===t?600:400,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{t==="sms"?<><IE emoji="💬" Icon={MessageSquare} size={11} />SMS</>:t==="email"?<><IE emoji="✉️" Icon={Mail} size={11} />Email</>:<><IE emoji="📞" Icon={Phone} size={11} />Call</>}</button>
             ))}
           </div>
           {oTab!=="call"?(
@@ -535,7 +561,7 @@ export default function CRM() {
               <textarea ref={msgRef} defaultValue={defaultMsg(selC)} rows={3} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,color:"#0F172A",resize:"none",background:"#F8FAFC"}} />
               <div style={{display:"flex",gap:6,marginTop:6}}>
                 <button onClick={()=>toast(`${oTab==="sms"?"SMS":"Email"} sent to ${selC.fn}`)} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
-                <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),oTab)} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>{personalizing?"Writing…":"✨ AI Personalize"}</button>
+                <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),oTab)} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{personalizing?"Writing…":<><IE emoji="✨" Icon={Sparkles} size={11} />AI Personalize</>}</button>
               </div>
             </>
           ):(
@@ -549,7 +575,7 @@ export default function CRM() {
           <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Timeline</div>
           {activities.filter(a=>a.contact.includes(selC.fn)).concat(activities.slice(0,2)).slice(0,5).map((a,i)=>(
             <div key={i} style={{display:"flex",gap:7,alignItems:"flex-start",padding:"5px 0",borderBottom:i<4?"1px solid #F1F5F9":"none"}}>
-              <div style={{width:22,height:22,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>{a.icon}</div>
+              <div style={{width:22,height:22,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}><LkIcon m={ACT_ICON_MAP} n={a.icon} size={10} emoji={ACT_ICON_EMOJIS[a.icon]} /></div>
               <div><div style={{fontSize:11,color:"#0F172A",lineHeight:1.4}}>{a.text}</div><div style={{fontSize:10,color:"#94A3B8"}}>{a.time}</div></div>
             </div>
           ))}
@@ -631,7 +657,7 @@ export default function CRM() {
             </BreadcrumbList>
           </Breadcrumb>
           <div style={{display:"flex",gap:12,marginBottom:14}}>
-            <div style={{width:46,height:46,borderRadius:8,background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📊</div>
+            <div style={{width:46,height:46,borderRadius:8,background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IE emoji="📊" Icon={BarChart3} size={20} color={P} /></div>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:16,fontWeight:700,color:"#0F172A"}}>{selD.title}</span>
@@ -657,7 +683,7 @@ export default function CRM() {
                 return(
                   <div key={st} style={{display:"flex",alignItems:"center"}}>
                     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                      <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,background:done?P+"20":curr?P+"15":"#F8FAFC",border:`1.5px solid ${done?P:curr?P+"66":"#E2E8F0"}`,color:done?P:curr?P:"#94A3B8",fontWeight:700}}>{done?"✓":i+1}</div>
+                      <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,background:done?P+"20":curr?P+"15":"#F8FAFC",border:`1.5px solid ${done?P:curr?P+"66":"#E2E8F0"}`,color:done?P:curr?P:"#94A3B8",fontWeight:700}}>{done?<IE emoji="✓" Icon={Check} size={10} />:i+1}</div>
                       <div style={{fontSize:8,color:"#94A3B8",textAlign:"center",maxWidth:48,whiteSpace:"nowrap"}}>{st}</div>
                     </div>
                     {i<ALL_STAGES.length-1&&<div style={{width:20,height:1,background:done?P+"44":"#E2E8F0",marginBottom:14}} />}
@@ -762,10 +788,10 @@ export default function CRM() {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,padding:"14px 16px",background:"linear-gradient(135deg,#0F172A,#1E293B)",borderRadius:10}}>
         <div>
           <div style={{fontSize:13,fontWeight:700,color:"#F1F5F9"}}>Weekly Intelligence Briefing</div>
-          <div style={{fontSize:11,color:"#64748B",marginTop:2}}>{vert.icon} {vert.label} · Powered by Claude AI</div>
+          <div style={{fontSize:11,color:"#64748B",marginTop:2,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={11} color="#64748B" emoji={VERT_ICON_EMOJIS[vert.icon]} />{vert.label} · Powered by Claude AI</div>
         </div>
         <button onClick={generateReport} disabled={genLoading} style={{padding:"8px 18px",background:genLoading?"#334155":P,color:genLoading?"#94A3B8":"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>
-          {genLoading?"Claude is writing…":"⚡ Generate Report"}
+          {genLoading?"Claude is writing…":<><IE emoji="⚡" Icon={Zap} size={13} />Generate Report</>}
         </button>
       </div>
       {report?(
@@ -778,7 +804,7 @@ export default function CRM() {
         </div>
       ):(
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"40px",textAlign:"center",color:"#94A3B8"}}>
-          <div style={{fontSize:32,marginBottom:12}}>{vert.icon}</div>
+          <div style={{marginBottom:12}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={32} color="#94A3B8" emoji={VERT_ICON_EMOJIS[vert.icon]} /></div>
           <div style={{fontSize:14,fontWeight:600,color:"#64748B",marginBottom:4}}>No report yet</div>
           <div style={{fontSize:12}}>Click "Generate Report" — Claude writes your {vert.label} briefing live in ~5 seconds</div>
         </div>
@@ -789,7 +815,7 @@ export default function CRM() {
   const renderActivity = () => (
     <div>{activities.map((a,i)=>(
       <div key={i} style={{display:"flex",gap:9,alignItems:"flex-start",padding:"9px 0",borderBottom:"1px solid #F1F5F9"}}>
-        <div style={{width:30,height:30,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{a.icon}</div>
+        <div style={{width:30,height:30,borderRadius:"50%",background:a.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><LkIcon m={ACT_ICON_MAP} n={a.icon} size={13} emoji={ACT_ICON_EMOJIS[a.icon]} /></div>
         <div style={{flex:1}}><div style={{fontSize:12,color:"#0F172A",lineHeight:1.5}}><strong>{a.contact}</strong> — {a.text}</div><div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{a.time}</div></div>
       </div>
     ))}</div>
@@ -808,8 +834,8 @@ export default function CRM() {
           <div style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>{c.fn} {c.ln}</div>
           <div style={{fontSize:11,color:"#64748B"}}>{c.co}</div>
           <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:6,flexWrap:"wrap"}}>
-            <span style={{fontSize:10,background:P+"15",color:P,padding:"2px 8px",borderRadius:99,fontWeight:700}}>{vert.icon} {vert.label}</span>
-            {ld&&<span style={{fontSize:10,background:"#F0FDF4",color:"#15803D",padding:"2px 8px",borderRadius:99,fontWeight:700}}>✓ Live Claude Score</span>}
+            <span style={{fontSize:10,background:P+"15",color:P,padding:"2px 8px",borderRadius:99,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={10} color={P} emoji={VERT_ICON_EMOJIS[vert.icon]} />{vert.label}</span>
+            {ld&&<span style={{fontSize:10,background:"#F0FDF4",color:"#15803D",padding:"2px 8px",borderRadius:99,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><IE emoji="✅" Icon={Check} size={10} color="#15803D" />Live Claude Score</span>}
           </div>
         </div>
         {breakdown.map(([name,val]:any,i:number)=>(
@@ -821,7 +847,7 @@ export default function CRM() {
         {(ld?.ai_insight||c?.insight)&&<div style={{marginTop:12,padding:"10px 12px",background:"#F8FAFC",borderRadius:8}}><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",marginBottom:4}}>Claude AI Insight</div><div style={{fontSize:12,color:"#0F172A",lineHeight:1.6}}>{ld?.ai_insight||c?.insight}</div></div>}
         {(ld?.recommended_action||c?.action)&&<div style={{marginTop:8,padding:"10px 12px",background:P+"10",borderRadius:8,border:`1px solid ${P}33`}}><div style={{fontSize:9,color:P,textTransform:"uppercase",marginBottom:4}}>Recommended Action</div><div style={{fontSize:12,color:"#0F172A",fontWeight:600}}>{ld?.recommended_action||c?.action}</div></div>}
         <button onClick={()=>scoreOne(c)} disabled={scoringId===c.id} style={{width:"100%",marginTop:12,padding:"9px",background:scoringId===c.id?"#F1F5F9":"#0F172A",color:scoringId===c.id?"#94A3B8":"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>
-          {scoringId===c.id?"Scoring with Claude…":"🧠 Score Live with Claude API"}
+          {scoringId===c.id?"Scoring with Claude…":<><IE emoji="🧠" Icon={Brain} size={14} />Score Live with Claude API</>}
         </button>
       </div>
     ):null;
@@ -833,7 +859,7 @@ export default function CRM() {
         {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:i===csvStep?P:"#E2E8F0"}} />)}
       </div>
       {csvStep===0&&<div onClick={()=>setCsvStep(1)} style={{border:"1.5px dashed #CBD5E1",borderRadius:10,padding:"28px",textAlign:"center",cursor:"pointer",background:"#F8FAFC"}}>
-        <div style={{fontSize:32,marginBottom:8}}>📁</div>
+        <div style={{marginBottom:8}}><IE emoji="📂" Icon={FolderOpen} size={32} color="#94A3B8" /></div>
         <div style={{fontSize:13,fontWeight:600,color:"#0F172A",marginBottom:3}}>Drop CSV here or click to upload</div>
         <div style={{fontSize:11,color:"#94A3B8"}}>Supports .csv, .xlsx · Any column format</div>
       </div>}
@@ -851,7 +877,7 @@ export default function CRM() {
         <button onClick={()=>setCsvStep(2)} style={{width:"100%",marginTop:12,padding:"9px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>Import 229 Records</button>
       </>}
       {csvStep===2&&<div style={{textAlign:"center",padding:"20px"}}>
-        <div style={{fontSize:40,marginBottom:10}}>✅</div>
+        <div style={{marginBottom:10}}><IE emoji="✅" Icon={CheckCircle2} size={40} color="#15803D" /></div>
         <div style={{fontSize:15,fontWeight:700,color:"#0F172A",marginBottom:5}}>229 contacts imported</div>
         <div style={{fontSize:12,color:"#64748B",marginBottom:16}}>Scrubbing complete · AI scoring queued</div>
         <button onClick={()=>{setModal(null);setCsvStep(0);}} style={{padding:"9px 24px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>View Contacts</button>
@@ -860,7 +886,22 @@ export default function CRM() {
   );
 
   const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center",finance:"Financial Hub",estimates:"Estimate Builder",map:"Map View"};
-  const NAV=[["dashboard","📊","Dashboard"],["contacts","👥","Contacts"],["companies","🏢","Companies"],["deals","📈","Pipeline"],["quotes","📋","Quotes"],["estimates","📐","Estimates"],["docs","🗂️","Documents"],["finance","💰","Financials"],["map","🗺️","Map"],["pipeline","🔄","Data Flow"],["ask","💬","Ask AI"],["lists","🗂️","Lists"],["reports","📰","Reports"],["activity","⚡","Activity"]];
+  const NAV: [string, React.ComponentType<any>, string, string][] = [
+    ["dashboard", LayoutDashboard, "Dashboard", "📊"],
+    ["contacts",  Users,           "Contacts",  "👥"],
+    ["companies", Building2,       "Companies", "🏢"],
+    ["deals",     TrendingUp,      "Pipeline",  "📈"],
+    ["quotes",    ClipboardList,   "Quotes",    "📋"],
+    ["estimates", Ruler,           "Estimates", "📐"],
+    ["docs",      FolderOpen,      "Documents", "🗂️"],
+    ["finance",   DollarSign,      "Financials","💰"],
+    ["map",       Map,             "Map",       "🗺️"],
+    ["pipeline",  Workflow,        "Data Flow", "🔄"],
+    ["ask",       MessageSquare,   "Ask AI",    "💬"],
+    ["lists",     LayoutList,      "Lists",     "🗂️"],
+    ["reports",   BarChart2,       "Reports",   "📰"],
+    ["activity",  Zap,             "Activity",  "⚡"],
+  ];
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#F8FAFC",fontFamily:"system-ui,-apple-system,sans-serif",position:"relative",overflow:"hidden"}}>
@@ -871,7 +912,7 @@ export default function CRM() {
         <div style={{padding:"8px 9px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)",marginBottom:6,position:"relative"}}>
           <div style={{fontSize:16,fontWeight:800,color:"#F1F5F9",letterSpacing:"-0.3px",marginBottom:5}}>KOVA</div>
           <button onClick={()=>setVertOpen(!vertOpen)} style={{display:"flex",alignItems:"center",gap:5,background:P+"20",border:`1px solid ${P}44`,borderRadius:6,padding:"5px 8px",cursor:"pointer",width:"100%",justifyContent:"space-between"}}>
-            <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:13}}>{vert.icon}</span><span style={{fontSize:11,fontWeight:600,color:P}}>{vert.label}</span></span>
+            <span style={{display:"flex",alignItems:"center",gap:5}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={13} color={P} emoji={VERT_ICON_EMOJIS[vert.icon]} /><span style={{fontSize:11,fontWeight:600,color:P}}>{vert.label}</span></span>
             <span style={{color:P,fontSize:9,transition:"transform .15s",display:"inline-block",transform:vertOpen?"rotate(180deg)":"rotate(0)"}}>▼</span>
           </button>
           {vertOpen&&(
@@ -879,25 +920,25 @@ export default function CRM() {
               <div style={{padding:"8px 10px 4px",fontSize:9,color:"#475569",letterSpacing:"2px",textTransform:"uppercase"}}>Switch Vertical</div>
               {ALL_VERTICALS.map(v=>(
                 <button key={v.id} onClick={()=>switchVertical(v.id)} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 10px",background:v.id===vertId?`${v.color}20`:"transparent",border:"none",cursor:"pointer",textAlign:"left",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                  <span style={{fontSize:15}}>{v.icon}</span>
+                  <LkIcon m={VERT_ICON_MAP} n={v.icon} size={15} color={v.id===vertId?v.color:"#CBD5E1"} emoji={VERT_ICON_EMOJIS[v.icon]} />
                   <div>
                     <div style={{fontSize:12,fontWeight:600,color:v.id===vertId?v.color:"#CBD5E1"}}>{v.label}</div>
                     <div style={{fontSize:9,color:"#475569"}}>{CONTACTS.filter(c=>c.vertical===v.id).length} contacts</div>
                   </div>
-                  {v.id===vertId&&<span style={{marginLeft:"auto",color:v.color,fontSize:12}}>✓</span>}
+                  {v.id===vertId&&<IE emoji="✓" Icon={Check} size={12} color={v.color} className="ml-auto" />}
                 </button>
               ))}
             </div>
           )}
         </div>
-        {NAV.map(([id,icon,label])=>(
+        {NAV.map(([id, Icon, label, emoji])=>(
           <button key={id} onClick={()=>goView(id as ExtView)} style={{display:"flex",alignItems:"center",gap:7,padding:"6px 9px",borderRadius:6,border:"none",width:"100%",textAlign:"left",background:view===id&&!selC&&!selD&&!selCo?`${P}15`:"transparent",color:view===id&&!selC&&!selD&&!selCo?P:"#94A3B8",fontSize:11,fontWeight:view===id&&!selC&&!selD&&!selCo?600:400,cursor:"pointer"}}>
-            <span style={{fontSize:14}}>{icon}</span>{label}
+            <IE emoji={emoji} Icon={Icon} size={14} />{label}
           </button>
         ))}
         <div style={{flex:1}} />
         <button onClick={()=>window.open("/onboard","_self")} style={{display:"flex",alignItems:"center",gap:7,padding:"6px 9px",borderRadius:6,border:"none",background:"transparent",color:"#94A3B8",fontSize:11,cursor:"pointer"}}>
-          <span style={{fontSize:14}}>⚙️</span>Settings
+          <IE emoji="⚙️" Icon={Settings} size={14} />Settings
         </button>
       </aside>
 
@@ -937,16 +978,20 @@ export default function CRM() {
           </div>
           <div style={{position:"relative"}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{padding:"5px 8px 5px 26px",fontSize:11,border:"1px solid #E2E8F0",borderRadius:7,background:"#F8FAFC",width:140,color:"#0F172A"}} />
-            <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"#94A3B8",pointerEvents:"none"}}>🔍</span>
+            <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",display:"flex"}}><Search size={12} color="#94A3B8" /></span>
           </div>
           {["contacts","deals","lists"].includes(view)&&!selC&&!selD&&!selCo&&(
             <button onClick={()=>setModal("create")} style={{fontSize:11,padding:"5px 10px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,display:"flex",alignItems:"center",gap:3,fontWeight:600,cursor:"pointer"}}>+ Add</button>
           )}
-          <button onClick={()=>setShowDocAgent(true)} style={{fontSize:11,padding:"5px 10px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontWeight:700,cursor:"pointer"}}>✨ Build with Agent</button>
-          <button onClick={()=>{setCsvStep(0);setModal("csv");}} style={{fontSize:11,padding:"5px 10px",background:"#F8FAFC",color:"#64748B",border:"1px solid #E2E8F0",borderRadius:6,fontWeight:600,cursor:"pointer"}}>↑ Import</button>
+          <button onClick={()=>setShowDocAgent(true)} style={{fontSize:11,padding:"5px 10px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><IE emoji="✨" Icon={Sparkles} size={12} />Build with Agent</button>
+          <button onClick={()=>{setCsvStep(0);setModal("csv");}} style={{fontSize:11,padding:"5px 10px",background:"#F8FAFC",color:"#64748B",border:"1px solid #E2E8F0",borderRadius:6,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><IE emoji="📤" Icon={Upload} size={12} />Import</button>
+          <button onClick={toggle} title={emojiMode?"Switch to Icons":"Switch to Emoji"} style={{fontSize:11,padding:"4px 9px",background:emojiMode?"#FFFBEB":"#F1F5F9",color:emojiMode?"#B45309":"#64748B",border:`1px solid ${emojiMode?"#FDE68A":"#E2E8F0"}`,borderRadius:6,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+            {emojiMode?<span style={{fontSize:13,lineHeight:1}}>😊</span>:<Smile size={12} />}
+            {emojiMode?"Emoji":"Icons"}
+          </button>
           <div style={{position:"relative"}}>
-            <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:"none",border:"none",fontSize:17,cursor:"pointer",padding:"3px",color:"#64748B",position:"relative"}}>
-              🔔<span style={{position:"absolute",top:2,right:2,width:6,height:6,background:"#EF4444",borderRadius:"50%",border:"1.5px solid #fff"}} />
+            <button onClick={()=>setNotifOpen(!notifOpen)} style={{background:"none",border:"none",cursor:"pointer",padding:"3px",color:"#64748B",position:"relative",display:"flex"}}>
+              <IE emoji="🔔" Icon={Bell} size={17} /><span style={{position:"absolute",top:2,right:2,width:6,height:6,background:"#EF4444",borderRadius:"50%",border:"1.5px solid #fff"}} />
             </button>
             {notifOpen&&(
               <div style={{position:"absolute",right:0,top:"100%",marginTop:4,width:270,background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:12,zIndex:99,boxShadow:"0 4px 16px rgba(0,0,0,0.1)"}}>

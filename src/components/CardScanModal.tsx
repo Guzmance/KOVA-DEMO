@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { Camera, Upload, X, Check, Loader2, ScanLine } from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -79,13 +80,13 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.55)" }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" style={{ maxHeight: "90vh", overflowY: "auto" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden" style={{ maxHeight: "90vh", overflowY: "auto" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#0F172A] flex items-center justify-center">
-              <ScanLine size={15} className="text-white" />
+              <IE emoji="🔍" Icon={ScanLine} size={15} className="text-white" />
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">Business Card Scanner</p>
@@ -93,11 +94,11 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-            <X size={16} className="text-muted-foreground" />
+            <IE emoji="✕" Icon={X} size={16} className="text-muted-foreground" />
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-6">
           {/* UPLOAD STAGE */}
           {stage === "upload" && (
             <div className="space-y-4">
@@ -118,7 +119,7 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
                 ) : (
                   <div className="space-y-3">
                     <div className="w-14 h-14 rounded-full bg-secondary mx-auto flex items-center justify-center">
-                      <Camera size={24} className="text-muted-foreground" />
+                      <IE emoji="📷" Icon={Camera} size={24} className="text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-foreground">Drop card image here</p>
@@ -132,10 +133,10 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
 
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-2" onClick={() => fileRef.current?.click()}>
-                  <Upload size={14} />Upload Image
+                  <IE emoji="📤" Icon={Upload} size={14} />Upload Image
                 </Button>
                 <Button className="flex-1 gap-2 bg-[#0F172A] hover:bg-[#0F172A]/90" onClick={scan} disabled={!preview}>
-                  <ScanLine size={14} />Scan Card
+                  <IE emoji="🔍" Icon={ScanLine} size={14} />Scan Card
                 </Button>
               </div>
             </div>
@@ -165,7 +166,7 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
           {stage === "review" && edited && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F0FDF4] border border-[#86EFAC]">
-                <Check size={14} className="text-[#15803D]" />
+                <IE emoji="✅" Icon={Check} size={14} className="text-[#15803D]" />
                 <p className="text-xs font-semibold text-[#15803D]">Card scanned successfully — review and edit before saving</p>
               </div>
 
@@ -219,7 +220,7 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
                   Re-scan
                 </Button>
                 <Button className="flex-1 bg-[#0F172A] hover:bg-[#0F172A]/90 gap-1.5" onClick={handleAdd}>
-                  <Check size={13} />Add to Contacts
+                  <IE emoji="✅" Icon={Check} size={13} />Add to Contacts
                 </Button>
               </div>
             </div>
@@ -229,7 +230,7 @@ export default function CardScanModal({ onClose, onAdd }: Props) {
           {stage === "done" && (
             <div className="py-10 flex flex-col items-center gap-4 text-center">
               <div className="w-14 h-14 rounded-full bg-[#F0FDF4] border-2 border-[#86EFAC] flex items-center justify-center">
-                <Check size={24} className="text-[#15803D]" />
+                <IE emoji="✅" Icon={Check} size={24} className="text-[#15803D]" />
               </div>
               <div>
                 <p className="text-sm font-bold text-foreground">{edited?.firstName} {edited?.lastName} added</p>

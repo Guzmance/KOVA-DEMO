@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useToast, ToastContainer } from "@/components/ui/toast";
+import { User, MapPin, X } from "lucide-react";
+import { IE } from "@/lib/icon-mode";
 
 const LOCATIONS = [
   { id:"c1", type:"company", name:"Apex Realty Group",        industry:"Residential Brokerage",  vertical:"real_estate",   lat:25.7617, lng:-80.1918, city:"Miami, FL",       revenue:"$2.4M",  contacts:3, deals:4 },
@@ -157,7 +159,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
       {selected && (
         <div style={{background:"#fff",border:`1.5px solid ${color}44`,borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",gap:12,alignItems:"center"}}>
           <div style={{width:40,height:40,borderRadius:selected.type==="company"?8:"50%",background:color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color,flexShrink:0}}>
-            {selected.type==="company"?selected.name[0]:"👤"}
+            {selected.type==="company"?selected.name[0]:<IE emoji="👤" Icon={User} size={16} color={color} />}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{selected.name}</div>
@@ -173,7 +175,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
               {selected.type==="contact"?"View Contact":"View Company"}
             </button>
             <button onClick={()=>toast(`Deal created for ${selected.name}`)} style={{fontSize:11,padding:"5px 11px",background:color+"15",color,border:`1px solid ${color}44`,borderRadius:6,cursor:"pointer",fontWeight:600}}>+ Deal</button>
-            <button onClick={()=>setSelected(null)} style={{fontSize:11,padding:"5px 8px",background:"#F8FAFC",color:"#94A3B8",border:"1px solid #E2E8F0",borderRadius:6,cursor:"pointer"}}>✕</button>
+            <button onClick={()=>setSelected(null)} style={{fontSize:11,padding:"5px 8px",background:"#F8FAFC",color:"#94A3B8",border:"1px solid #E2E8F0",borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center"}}><IE emoji="✕" Icon={X} size={11} /></button>
           </div>
         </div>
       )}
@@ -214,7 +216,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
             }}
             style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:"1px solid #F8FAFC",cursor:"pointer"}}
           >
-            <span style={{fontSize:12,fontWeight:600,color:"#0F172A",flex:1}}>📍 {city}</span>
+            <span style={{fontSize:12,fontWeight:600,color:"#0F172A",flex:1,display:"flex",alignItems:"center",gap:4}}><IE emoji="📍" Icon={MapPin} size={11} color="#94A3B8" />{city}</span>
             {data.companies>0 && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F1F5F9",color:"#64748B"}}>{data.companies} {data.companies===1?"company":"companies"}</span>}
             {data.contacts>0  && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F1F5F9",color:"#64748B"}}>{data.contacts} {data.contacts===1?"contact":"contacts"}</span>}
             <span style={{fontSize:10,color:"#94A3B8"}}>{data.deals} deals</span>
