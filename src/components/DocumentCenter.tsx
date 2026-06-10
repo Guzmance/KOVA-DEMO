@@ -228,6 +228,7 @@ export default function DocumentCenter({ vertId, onNewEstimate, initialTab, extr
     const isInv = active.type==="invoice";
     const isEdit = view==="create";
     const remaining = isInv ? total - (active.paidAmount||0) : total;
+    const editInp: React.CSSProperties = {fontSize:12,color:"#0F172A",background:"rgba(0,0,0,0.03)",border:"1px solid #E2E8F0",borderRadius:5,padding:"5px 8px",width:"100%",outline:"none",boxSizing:"border-box"};
 
     return (
       <div>
@@ -301,26 +302,82 @@ export default function DocumentCenter({ vertId, onNewEstimate, initialTab, extr
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14,paddingBottom:12,borderBottom:"1px solid #F1F5F9"}}>
               {isPO || isReq ? (
                 <>
-                  <div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>Vendor</div><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.vendor||"—"}</div><div style={{fontSize:11,color:"#64748B"}}>{active.vendorContact}</div></div>
-                  <div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{isReq?"Requested By":"Approved By"}</div><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.approvedBy||"Pending"}</div>{active.approvedDate&&<div style={{fontSize:11,color:"#64748B"}}>{active.approvedDate}</div>}</div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>Vendor</div>
+                    {isEdit ? (
+                      <>
+                        <input value={active.vendor||""} onChange={e=>setF("vendor",e.target.value)} placeholder="Vendor name" style={editInp} />
+                        <input value={active.vendorContact||""} onChange={e=>setF("vendorContact",e.target.value)} placeholder="Contact · email" style={{...editInp,marginTop:5,fontSize:10}} />
+                      </>
+                    ) : (
+                      <><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.vendor||"—"}</div><div style={{fontSize:11,color:"#64748B"}}>{active.vendorContact}</div></>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>{isReq?"Requested By":"Approved By"}</div>
+                    {isEdit ? (
+                      <input value={active.approvedBy||""} onChange={e=>setF("approvedBy",e.target.value)} placeholder="Name" style={editInp} />
+                    ) : (
+                      <><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.approvedBy||"Pending"}</div>{active.approvedDate&&<div style={{fontSize:11,color:"#64748B"}}>{active.approvedDate}</div>}</>
+                    )}
+                  </div>
                 </>
-              ):(
+              ) : (
                 <>
-                  <div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{isInv?"Bill To":"Client"}</div><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.contact||"—"}</div><div style={{fontSize:11,color:"#64748B"}}>{active.company}</div><div style={{fontSize:10,color:"#94A3B8"}}>{active.email}</div></div>
-                  <div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>Dates</div><div style={{fontSize:12,color:"#0F172A"}}>Created: {active.created}</div><div style={{fontSize:12,color:active.status==="overdue"?"#B91C1C":"#0F172A"}}>Due: {active.dueDate||"—"}</div></div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>{isInv?"Bill To":"Client"}</div>
+                    {isEdit ? (
+                      <>
+                        <input value={active.contact} onChange={e=>setF("contact",e.target.value)} placeholder="Contact name" style={editInp} />
+                        <input value={active.company} onChange={e=>setF("company",e.target.value)} placeholder="Company" style={{...editInp,marginTop:5}} />
+                        <input value={active.email} onChange={e=>setF("email",e.target.value)} placeholder="Email" style={{...editInp,marginTop:5,fontSize:10}} />
+                      </>
+                    ) : (
+                      <><div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{active.contact||"—"}</div><div style={{fontSize:11,color:"#64748B"}}>{active.company}</div><div style={{fontSize:10,color:"#94A3B8"}}>{active.email}</div></>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>Dates</div>
+                    {isEdit ? (
+                      <>
+                        <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>Due Date</div>
+                        <input value={active.dueDate} onChange={e=>setF("dueDate",e.target.value)} placeholder="e.g. Jul 10, 2026" style={editInp} />
+                      </>
+                    ) : (
+                      <><div style={{fontSize:12,color:"#0F172A"}}>Created: {active.created}</div><div style={{fontSize:12,color:active.status==="overdue"?"#B91C1C":"#0F172A"}}>Due: {active.dueDate||"—"}</div></>
+                    )}
+                  </div>
                 </>
               )}
             </div>
 
             {/* Requisition-specific fields */}
-            {isReq && active.requisitionReason && (
+            {isReq && (isEdit || !!active.requisitionReason) && (
               <div style={{padding:"10px 12px",background:"#F5F3FF",borderRadius:7,border:"1px solid #DDD6FE",marginBottom:12}}>
-                <div style={{fontSize:9,color:"#7C3AED",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:3}}>Reason for Request</div>
-                <div style={{fontSize:12,color:"#334155",lineHeight:1.6}}>{active.requisitionReason}</div>
-                <div style={{display:"flex",gap:12,marginTop:6}}>
-                  {active.department && <div style={{fontSize:10,color:"#64748B"}}>Dept: <strong>{active.department}</strong></div>}
-                  {active.budgetCode && <div style={{fontSize:10,color:"#64748B"}}>Budget: <strong style={{fontFamily:"monospace"}}>{active.budgetCode}</strong></div>}
-                </div>
+                <div style={{fontSize:9,color:"#7C3AED",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:5}}>Reason for Request</div>
+                {isEdit ? (
+                  <>
+                    <textarea value={active.requisitionReason||""} onChange={e=>setF("requisitionReason",e.target.value)} placeholder="Describe the reason for this request…" style={{width:"100%",border:"1px solid #DDD6FE",borderRadius:5,padding:"6px 8px",fontSize:11,color:"#334155",lineHeight:"1.6",resize:"vertical",outline:"none",background:"transparent",minHeight:50,boxSizing:"border-box",marginBottom:6}} />
+                    <div style={{display:"flex",gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:9,color:"#7C3AED",marginBottom:2}}>Department</div>
+                        <input value={active.department||""} onChange={e=>setF("department",e.target.value)} placeholder="e.g. Operations" style={{...editInp,fontSize:10}} />
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:9,color:"#7C3AED",marginBottom:2}}>Budget Code</div>
+                        <input value={active.budgetCode||""} onChange={e=>setF("budgetCode",e.target.value)} placeholder="e.g. OPS-2026-Q3" style={{...editInp,fontSize:10}} />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{fontSize:12,color:"#334155",lineHeight:1.6}}>{active.requisitionReason}</div>
+                    <div style={{display:"flex",gap:12,marginTop:6}}>
+                      {active.department && <div style={{fontSize:10,color:"#64748B"}}>Dept: <strong>{active.department}</strong></div>}
+                      {active.budgetCode && <div style={{fontSize:10,color:"#64748B"}}>Budget: <strong style={{fontFamily:"monospace"}}>{active.budgetCode}</strong></div>}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -338,27 +395,85 @@ export default function DocumentCenter({ vertId, onNewEstimate, initialTab, extr
             )}
 
             {/* Line items */}
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
-              <thead><tr style={{background:"#F8FAFC"}}>{["Description","Qty","Unit","Price","Total"].map(h=><th key={h} style={{padding:"7px 8px",fontSize:9,color:"#64748B",fontWeight:600,textAlign:h==="Total"||h==="Price"?"right":"left",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
-              <tbody>{active.lines.filter(l=>l.description||l.price>0).map((l,i)=>(
-                <tr key={l.id} style={{borderBottom:"1px solid #F8FAFC"}}>
-                  <td style={{padding:"8px",fontSize:12,color:"#0F172A"}}>{l.description}</td>
-                  <td style={{padding:"8px",fontSize:11,color:"#64748B",textAlign:"center"}}>{l.qty}</td>
-                  <td style={{padding:"8px",fontSize:11,color:"#64748B",textAlign:"center"}}>{l.unit}</td>
-                  <td style={{padding:"8px",fontSize:11,color:"#0F172A",textAlign:"right"}}>{fv(l.price)}</td>
-                  <td style={{padding:"8px",fontSize:12,fontWeight:500,color:"#0F172A",textAlign:"right"}}>{fv(l.qty*l.price)}</td>
-                </tr>
-              ))}</tbody>
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:isEdit?4:12}}>
+              <thead><tr style={{background:"#F8FAFC"}}>
+                {["Description","Qty","Unit","Price","Total"].map(h=><th key={h} style={{padding:"7px 8px",fontSize:9,color:"#64748B",fontWeight:600,textAlign:h==="Total"||h==="Price"?"right":"left",textTransform:"uppercase"}}>{h}</th>)}
+                {isEdit && <th style={{width:24}} />}
+              </tr></thead>
+              <tbody>
+                {active.lines.filter(l=>isEdit||l.description||l.price>0).map(l=>(
+                  <tr key={l.id} style={{borderBottom:"1px solid #F8FAFC"}}>
+                    <td style={{padding:"5px 8px"}}>
+                      {isEdit
+                        ? <input value={l.description} onChange={e=>updateLine(l.id,"description",e.target.value)} placeholder="Description" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"5px 7px",fontSize:11,outline:"none",boxSizing:"border-box"}} />
+                        : <span style={{fontSize:12,color:"#0F172A"}}>{l.description}</span>}
+                    </td>
+                    <td style={{padding:"5px 6px",width:58}}>
+                      {isEdit
+                        ? <input type="number" value={l.qty} onChange={e=>updateLine(l.id,"qty",e.target.value)} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"5px 4px",fontSize:11,textAlign:"center",outline:"none"}} />
+                        : <span style={{fontSize:11,color:"#64748B",display:"block",textAlign:"center"}}>{l.qty}</span>}
+                    </td>
+                    <td style={{padding:"5px 6px",width:68}}>
+                      {isEdit
+                        ? <input value={l.unit} onChange={e=>updateLine(l.id,"unit",e.target.value)} placeholder="each" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"5px 4px",fontSize:11,textAlign:"center",outline:"none"}} />
+                        : <span style={{fontSize:11,color:"#64748B",display:"block",textAlign:"center"}}>{l.unit}</span>}
+                    </td>
+                    <td style={{padding:"5px 6px",width:76}}>
+                      {isEdit
+                        ? <input type="number" value={l.price} onChange={e=>updateLine(l.id,"price",e.target.value)} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"5px 4px",fontSize:11,textAlign:"right",outline:"none"}} />
+                        : <span style={{fontSize:11,color:"#0F172A",display:"block",textAlign:"right"}}>{fv(l.price)}</span>}
+                    </td>
+                    <td style={{padding:"5px 8px",textAlign:"right",width:76}}>
+                      <span style={{fontSize:12,fontWeight:500,color:"#0F172A"}}>{fv(l.qty*l.price)}</span>
+                    </td>
+                    {isEdit && (
+                      <td style={{padding:"5px 4px",width:22}}>
+                        <button onClick={()=>removeLine(l.id)} style={{background:"none",border:"none",color:"#94A3B8",cursor:"pointer",fontSize:16,lineHeight:1,padding:"2px 4px"}}>×</button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
             </table>
+            {isEdit && (
+              <button onClick={addLine} style={{padding:"5px 12px",background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:6,fontSize:11,color:"#64748B",cursor:"pointer",marginBottom:10,width:"100%"}}>+ Add Line</button>
+            )}
+
+            {/* Totals */}
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
               <div style={{display:"flex",gap:24,fontSize:11,color:"#64748B"}}><span>Subtotal</span><span>{fv(sub)}</span></div>
-              {active.tax>0&&<div style={{display:"flex",gap:24,fontSize:11,color:"#64748B"}}><span>Tax ({active.tax}%)</span><span>{fv(taxAmt)}</span></div>}
+              {isEdit ? (
+                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#64748B"}}>
+                  <span>Tax</span>
+                  <input type="number" value={active.tax} onChange={e=>setF("tax",+e.target.value)} style={{width:46,border:"1px solid #E2E8F0",borderRadius:5,padding:"3px 5px",fontSize:11,textAlign:"right",outline:"none"}} />
+                  <span>%</span>
+                  <span>{fv(taxAmt)}</span>
+                </div>
+              ) : (
+                active.tax>0 && <div style={{display:"flex",gap:24,fontSize:11,color:"#64748B"}}><span>Tax ({active.tax}%)</span><span>{fv(taxAmt)}</span></div>
+              )}
               <div style={{display:"flex",gap:24,fontSize:15,fontWeight:700,color:active.accentColor,paddingTop:4,borderTop:"1px solid #E2E8F0",marginTop:2}}><span>Total</span><span>{fv(total)}</span></div>
             </div>
 
             {/* Notes + Terms */}
-            {active.notes && <div style={{marginTop:12,padding:"10px 12px",background:"#F8FAFC",borderRadius:7}}><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",marginBottom:3}}>Notes</div><div style={{fontSize:11,color:"#64748B",lineHeight:1.6}}>{active.notes}</div></div>}
-            {active.terms && <div style={{marginTop:6,padding:"10px 12px",background:"#F8FAFC",borderRadius:7}}><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",marginBottom:3}}>Terms</div><div style={{fontSize:11,color:"#64748B",lineHeight:1.6}}>{active.terms}</div></div>}
+            {(!!active.notes || isEdit) && (
+              <div style={{marginTop:12,padding:"10px 12px",background:"#F8FAFC",borderRadius:7}}>
+                <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",marginBottom:5}}>Notes</div>
+                {isEdit
+                  ? <textarea value={active.notes} onChange={e=>setF("notes",e.target.value)} placeholder="Add notes…" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"6px 8px",fontSize:11,color:"#64748B",lineHeight:"1.6",resize:"vertical",outline:"none",background:"transparent",minHeight:56,boxSizing:"border-box"}} />
+                  : <div style={{fontSize:11,color:"#64748B",lineHeight:1.6}}>{active.notes}</div>
+                }
+              </div>
+            )}
+            {(!!active.terms || isEdit) && (
+              <div style={{marginTop:6,padding:"10px 12px",background:"#F8FAFC",borderRadius:7}}>
+                <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",marginBottom:5}}>Terms</div>
+                {isEdit
+                  ? <textarea value={active.terms} onChange={e=>setF("terms",e.target.value)} placeholder="Add payment terms…" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:5,padding:"6px 8px",fontSize:11,color:"#64748B",lineHeight:"1.6",resize:"vertical",outline:"none",background:"transparent",minHeight:56,boxSizing:"border-box"}} />
+                  : <div style={{fontSize:11,color:"#64748B",lineHeight:1.6}}>{active.terms}</div>
+                }
+              </div>
+            )}
           </div>
         </div>
       </div>
