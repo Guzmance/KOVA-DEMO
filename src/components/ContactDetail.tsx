@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import {
   Mail, Phone, MapPin, FileText, CheckCircle2, Calendar, ClipboardList,
@@ -7,6 +7,7 @@ import {
   BarChart2, FolderOpen, User, Check, Bookmark
 } from "lucide-react";
 import { IE } from "@/lib/icon-mode";
+import CONTACT_DATA from "@/lib/contact-data";
 
 type LkIconType = React.ComponentType<any>;
 
@@ -121,15 +122,35 @@ const DEFAULT_BLOCKS: BlockId[] = ["score", "activity", "deals", "info", "nextac
 
 export default function ContactDetail({ contact, accentColor, onBack }:{ contact?:any; accentColor:string; onBack:()=>void }) {
   const [tab, setTab] = useState("overview");
-  const [taskDone, setTaskDone] = useState<Record<string,boolean>>({t5:true});
+  const [taskDone, setTaskDone] = useState<Record<string,boolean>>({});
+  useEffect(() => {
+    const id = (contact?.id as number) || 0;
+    const tasks = CONTACT_DATA[id]?.tasks ?? SAMPLE_TASKS;
+    const map: Record<string,boolean> = {};
+    tasks.forEach((t:any) => { if (t.done) map[t.id] = true; });
+    setTaskDone(map);
+  }, [contact?.id]);
   const [blocks, setBlocks] = useState<BlockId[]>(DEFAULT_BLOCKS);
   const [draggingBlock, setDraggingBlock] = useState<BlockId|null>(null);
   const P = accentColor;
 
   // Normalize CRM Contact format (fn/ln/co) to the full ContactDetail format
   const raw = contact || SAMPLE_CONTACT;
-  const c = raw.fn !== undefined ? {
+  const rawId = (raw.id as number) || 0;
+  const cd = CONTACT_DATA[rawId] ?? null;
+  const c: any = raw.fn !== undefined ? {
     ...SAMPLE_CONTACT,
+    ...(cd ? {
+      address:cd.address, zip:cd.zip, website:cd.website, linkedin:cd.linkedin,
+      source:cd.source, tags:cd.tags,
+      lifetimeValue:cd.lifetimeValue, dealCount:cd.dealCount, quoteCount:cd.quoteCount,
+      avgDealSize:cd.avgDealSize, lastContact:cd.lastContact, firstContact:cd.firstContact,
+      lastPurchase:cd.lastPurchase, buyProbability:cd.buyProbability,
+      preferredChannel:cd.preferredChannel, responseTime:cd.responseTime,
+      emailsOpened:cd.emailsOpened, emailsSent:cd.emailsSent, meetingsHeld:cd.meetingsHeld,
+      quotesAccepted:cd.quotesAccepted, quotesSent:cd.quotesSent, pageVisits:cd.pageVisits,
+      lastPageVisited:cd.lastPageVisited, referralSource:cd.referralSource,
+    } : {}),
     name:    `${raw.fn} ${raw.ln}`,
     company: raw.co,
     title:   raw.role,
@@ -142,8 +163,16 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
     status:  raw.status === "customer" ? "Active" : raw.status.charAt(0).toUpperCase() + raw.status.slice(1),
     stage:   raw.status === "customer" ? "Customer" : raw.status === "qualified" ? "Qualified" : "Lead",
     notes:   raw.notes  ?? "",
-    nextLikelyAction: raw.action ?? SAMPLE_CONTACT.nextLikelyAction,
+    nextLikelyAction: cd?.nextLikelyAction ?? raw.action ?? SAMPLE_CONTACT.nextLikelyAction,
   } : raw;
+  const cActs   = cd?.activities ?? SAMPLE_ACTIVITIES;
+  const cDeals  = cd?.deals      ?? SAMPLE_DEALS;
+  const cQuotes = cd?.quotes     ?? SAMPLE_QUOTES;
+  const cTasks  = cd?.tasks      ?? SAMPLE_TASKS;
+  const cNotes  = cd?.notes      ?? SAMPLE_NOTES;
+  const cDocs   = cd?.docs       ?? ([] as any[]);
+  const cCal    = cd?.calendar   ?? ([] as any[]);
+  const aiPred  = cd?.aiPrediction ?? `${c.name} is ${c.buyProbability}% likely to close. Best channel: ${c.preferredChannel}. Response time: ${c.responseTime}.`;
 
   const handleBlockDragStart = useCallback((id: BlockId) => setDraggingBlock(id), []);
   const handleBlockDrop = useCallback((targetId: BlockId) => {
@@ -161,15 +190,15 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
 
   const TABS: {id:string; label:string; icon: LkIconType; emoji: string; count?: number}[] = [
     {id:"overview",  label:"Overview",   icon:LayoutDashboard, emoji:"🧩"},
-    {id:"activity",  label:"Activity",   icon:Zap,             emoji:"⚡", count:SAMPLE_ACTIVITIES.length},
-    {id:"email",     label:"Email",      icon:Mail,             emoji:"✉️", count:3},
-    {id:"tasks",     label:"Tasks",      icon:CheckCircle2,     emoji:"☑️", count:SAMPLE_TASKS.filter(t=>!taskDone[t.id]).length},
-    {id:"notes",     label:"Notes",      icon:FileText,         emoji:"📝", count:SAMPLE_NOTES.length},
-    {id:"calendar",  label:"Calendar",   icon:Calendar,         emoji:"📅", count:2},
-    {id:"quotes",    label:"Quotes",     icon:ClipboardList,    emoji:"📋", count:SAMPLE_QUOTES.length},
-    {id:"deals",     label:"Deals",      icon:DollarSign,       emoji:"💰", count:SAMPLE_DEALS.length},
+    {id:"activity",  label:"Activity",   icon:Zap,             emoji:"⚡", count:cActs.length},
+    {id:"email",     label:"Email",      icon:Mail,             emoji:"✉️", count:cActs.filter((a:any)=>a.type==="email").length},
+    {id:"tasks",     label:"Tasks",      icon:CheckCircle2,     emoji:"☑️", count:cTasks.filter((t:any)=>!taskDone[t.id]&&!t.done).length},
+    {id:"notes",     label:"Notes",      icon:FileText,         emoji:"📝", count:cNotes.length},
+    {id:"calendar",  label:"Calendar",   icon:Calendar,         emoji:"📅", count:cCal.length},
+    {id:"quotes",    label:"Quotes",     icon:ClipboardList,    emoji:"📋", count:cQuotes.length},
+    {id:"deals",     label:"Deals",      icon:DollarSign,       emoji:"💰", count:cDeals.length},
     {id:"stats",     label:"Stats",      icon:BarChart2,        emoji:"📊"},
-    {id:"docs",      label:"Documents",  icon:FolderOpen,       emoji:"🗂️", count:6},
+    {id:"docs",      label:"Documents",  icon:FolderOpen,       emoji:"🗂️", count:cDocs.length},
   ];
 
   const scoreColor = c.score>=80?"#15803D":c.score>=60?"#F59E0B":c.score>=40?"#3B9EFF":"#EF4444";
@@ -254,8 +283,8 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
         {/* OVERVIEW — draggable blocks */}
         {tab==="overview" && (() => {
           const scoreColor = c.score>=80?"#15803D":c.score>=60?"#F59E0B":c.score>=40?"#3B9EFF":"#EF4444";
-          const openDeals = SAMPLE_DEALS.filter(d=>d.stage!=="Closed Won");
-          const openTasks = SAMPLE_TASKS.filter(t=>!(taskDone[t.id]));
+          const openDeals = cDeals.filter((d:any)=>d.stage!=="Closed Won");
+          const openTasks = cTasks.filter((t:any)=>!taskDone[t.id]&&!t.done);
 
           const BLOCK_MAP: Record<BlockId, { title: string; icon: LkIconType; emoji: string; content: React.ReactNode }> = {
             score: {
@@ -279,7 +308,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               icon: Zap, emoji: "⚡",
               content: (
                 <div style={{display:"flex",flexDirection:"column",gap:0}}>
-                  {SAMPLE_ACTIVITIES.slice(0,3).map((a,i)=>{
+                  {cActs.slice(0,3).map((a:any,i:number)=>{
                     const ai = ACTIVITY_ICONS[a.type]||{icon:Bookmark, emoji:"📌", color:"#64748B"};
                     return (
                       <div key={a.id} style={{display:"flex",gap:7,alignItems:"flex-start",padding:"5px 0",borderBottom:i<2?"1px solid #F8FAFC":"none"}}>
@@ -419,14 +448,14 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
                 ))}
               </div>
             </div>
-            {SAMPLE_ACTIVITIES.map((a,i)=>{
+            {cActs.map((a:any,i:number)=>{
               const ai = ACTIVITY_ICONS[a.type] || {icon:Bookmark,color:"#64748B"};
               return (
                 <div key={a.id} style={{display:"flex",gap:0,marginBottom:0}}>
                   {/* Timeline line */}
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginRight:12,width:20}}>
                     <div style={{width:10,height:10,borderRadius:"50%",background:ai.color,flexShrink:0,marginTop:14,zIndex:1}} />
-                    {i<SAMPLE_ACTIVITIES.length-1 && <div style={{width:1,flex:1,background:"#E2E8F0"}} />}
+                    {i<cActs.length-1 && <div style={{width:1,flex:1,background:"#E2E8F0"}} />}
                   </div>
                   {/* Content */}
                   <div style={{flex:1,paddingBottom:14}}>
@@ -453,7 +482,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               <div style={{flex:1,fontSize:12,color:"#1D4ED8"}}>Email sync active — showing all threads with {c.email}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#1D4ED8",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>Compose</button>
             </div>
-            {SAMPLE_ACTIVITIES.filter(a=>a.type==="email").map(a=>(
+            {cActs.filter((a:any)=>a.type==="email").map((a:any)=>(
               <div key={a.id} style={{padding:"10px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:6,borderLeft:"3px solid #3B9EFF"}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                   <span style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{a.title}</span>
@@ -473,8 +502,8 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               <div style={{fontSize:11,color:"#64748B"}}>Open tasks for this contact</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#0F172A",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>+ Add Task</button>
             </div>
-            {SAMPLE_TASKS.map(t=>{
-              const done = taskDone[t.id]||false;
+            {cTasks.map((t:any)=>{
+              const done = taskDone[t.id]||t.done||false;
               return (
                 <div key={t.id} onClick={()=>setTaskDone(p=>({...p,[t.id]:!p[t.id]}))} style={{display:"flex",gap:9,alignItems:"center",padding:"9px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:5,cursor:"pointer",opacity:done?0.5:1}}>
                   <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${done?"#10B981":"#CBD5E1"}`,background:done?"#10B981":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#fff"}}>{done ? <IE emoji="✓" Icon={Check} size={9} /> : null}</div>
@@ -496,7 +525,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               <div style={{fontSize:11,color:"#64748B"}}>Internal notes about {c.name}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#0F172A",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>+ Add Note</button>
             </div>
-            {SAMPLE_NOTES.map(n=>(
+            {cNotes.map((n:any)=>(
               <div key={n.id} style={{padding:"10px 12px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:7,marginBottom:6}}>
                 <div style={{fontSize:12,color:"#334155",lineHeight:1.6,marginBottom:4}}>{n.text}</div>
                 <div style={{fontSize:10,color:"#94A3B8"}}>{n.date} · {n.by}</div>
@@ -513,7 +542,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
               <div style={{flex:1,fontSize:12,color:"#7C3AED"}}>Calendar sync shows meetings with {c.name}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#7C3AED",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>Schedule</button>
             </div>
-            {[{title:"Quarterly Review — Sarah Mitchell",date:"Jun 15, 2026",time:"11:00 AM — 11:45 AM",type:"Upcoming"},{title:"Listing Strategy Review",date:"May 28, 2026",time:"11:00 AM — 11:45 AM",type:"Completed"}].map((m,i)=>(
+            {cCal.map((m:any,i:number)=>(
               <div key={i} style={{padding:"10px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:6,borderLeft:`3px solid ${m.type==="Upcoming"?"#A78BFA":"#CBD5E1"}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
                   <span style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{m.title}</span>
@@ -529,10 +558,10 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
         {tab==="quotes" && (
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#64748B"}}>{SAMPLE_QUOTES.length} quotes sent to {c.name}</div>
+              <div style={{fontSize:11,color:"#64748B"}}>{cQuotes.length} quotes sent to {c.name}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:P,color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>+ New Quote</button>
             </div>
-            {SAMPLE_QUOTES.map(q=>(
+            {cQuotes.map((q:any)=>(
               <div key={q.id} style={{padding:"10px 12px",border:"1px solid #E2E8F0",borderRadius:7,marginBottom:6,borderLeft:`3px solid ${q.status==="accepted"?"#10B981":"#3B9EFF"}`,display:"flex",alignItems:"center",gap:10}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:2}}>
@@ -545,7 +574,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
                 <div style={{fontSize:16,fontWeight:700,color:P}}>{fv(q.total)}</div>
               </div>
             ))}
-            <div style={{fontSize:10,color:"#94A3B8",marginTop:6}}>Win rate: {Math.round(SAMPLE_QUOTES.filter(q=>q.status==="accepted").length/SAMPLE_QUOTES.length*100)}% · Avg quote: {fv(SAMPLE_QUOTES.reduce((a,q)=>a+q.total,0)/SAMPLE_QUOTES.length)}</div>
+            {cQuotes.length>0 && <div style={{fontSize:10,color:"#94A3B8",marginTop:6}}>Win rate: {Math.round(cQuotes.filter((q:any)=>q.status==="accepted").length/cQuotes.length*100)}% · Avg quote: {fv(cQuotes.reduce((a:number,q:any)=>a+q.total,0)/cQuotes.length)}</div>}
           </div>
         )}
 
@@ -553,7 +582,7 @@ export default function ContactDetail({ contact, accentColor, onBack }:{ contact
         {tab==="deals" && (
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#64748B"}}>{SAMPLE_DEALS.length} deals with {c.name}</div>
+              <div style={{fontSize:11,color:"#64748B"}}>{cDeals.length} deals with {c.name}</div>
               <button style={{fontSize:10,padding:"4px 10px",background:"#0F172A",color:"#fff",border:"none",borderRadius:5,cursor:"pointer",fontWeight:600}}>+ New Deal</button>
             </div>
             {SAMPLE_DEALS.map(d=>{

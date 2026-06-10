@@ -347,7 +347,7 @@ export default function PipelineViz() {
 
           {/* Drag hint */}
           <div style={{position:"absolute",bottom:10,left:"50%",transform:"translateX(-50%)",fontSize:9,color:"#1E293B",letterSpacing:"2px",pointerEvents:"none"}}>
-            DRAG STAGES TO REARRANGE · CLICK ▶ RUN PIPELINE TO SIMULATE
+            DRAG STAGES TO REARRANGE · CLICK ▶ RUN PIPELINE
           </div>
         </div>
 

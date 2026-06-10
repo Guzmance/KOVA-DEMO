@@ -5,31 +5,31 @@ import { User, MapPin, X } from "lucide-react";
 import { IE } from "@/lib/icon-mode";
 
 const LOCATIONS = [
-  { id:"c1", type:"company", name:"Apex Realty Group",        industry:"Residential Brokerage",  vertical:"real_estate",   lat:25.7617, lng:-80.1918, city:"Miami, FL",       revenue:"$2.4M",  contacts:3, deals:4 },
-  { id:"c2", type:"company", name:"Suncoast Properties",      industry:"Full-Service Brokerage", vertical:"real_estate",   lat:27.9506, lng:-82.4572, city:"Tampa, FL",       revenue:"$5.1M",  contacts:5, deals:7 },
-  { id:"c3", type:"company", name:"Clearwater Investments",   industry:"Investment Portfolio",   vertical:"real_estate",   lat:27.9659, lng:-82.8001, city:"Clearwater, FL",  revenue:"$12M",   contacts:2, deals:3 },
-  { id:"c4", type:"company", name:"Okafor Family Medicine",   industry:"Primary Care",           vertical:"healthcare",    lat:41.8781, lng:-87.6298, city:"Chicago, IL",     revenue:"$3.2M",  contacts:2, deals:2 },
-  { id:"c5", type:"company", name:"Sunrise Dental Group",     industry:"Dental Multi-Location",  vertical:"healthcare",    lat:32.7767, lng:-96.7970, city:"Dallas, TX",      revenue:"$8.4M",  contacts:3, deals:3 },
-  { id:"c6", type:"company", name:"Coastal Behavioral Health",industry:"Behavioral Health",      vertical:"healthcare",    lat:27.9478, lng:-82.4580, city:"Tampa, FL",       revenue:"$1.9M",  contacts:2, deals:1 },
-  { id:"c7", type:"company", name:"Harmon Industrial Supply", industry:"Industrial Supply",      vertical:"manufacturing", lat:41.4993, lng:-81.6944, city:"Cleveland, OH",   revenue:"$14M",   contacts:2, deals:2 },
-  { id:"c8", type:"company", name:"Pacific Fabrication Co",   industry:"Metal Fabrication",      vertical:"manufacturing", lat:45.5152, lng:-122.678, city:"Portland, OR",    revenue:"$24M",   contacts:3, deals:4 },
-  { id:"c9", type:"company", name:"Apex Composite Materials", industry:"Aerospace Composites",   vertical:"manufacturing", lat:41.7658, lng:-72.6734, city:"Hartford, CT",    revenue:"$6.8M",  contacts:2, deals:1 },
+  { id:"c1", type:"company", name:"Apex Realty Group",        industry:"Residential Brokerage",  vertical:"real_estate",   lat:25.7617, lng:-80.1918, city:"Miami, FL",       revenue:"$2.41M", contacts:3, deals:4 },
+  { id:"c2", type:"company", name:"Suncoast Properties",      industry:"Full-Service Brokerage", vertical:"real_estate",   lat:27.9506, lng:-82.4572, city:"Tampa, FL",       revenue:"$5.18M", contacts:5, deals:7 },
+  { id:"c3", type:"company", name:"Clearwater Investments",   industry:"Investment Portfolio",   vertical:"real_estate",   lat:27.9659, lng:-82.8001, city:"Clearwater, FL",  revenue:"$12.3M", contacts:2, deals:3 },
+  { id:"c4", type:"company", name:"Okafor Family Medicine",   industry:"Primary Care",           vertical:"healthcare",    lat:41.8781, lng:-87.6298, city:"Chicago, IL",     revenue:"$3.24M", contacts:2, deals:2 },
+  { id:"c5", type:"company", name:"Sunrise Dental Group",     industry:"Dental Multi-Location",  vertical:"healthcare",    lat:32.7767, lng:-96.7970, city:"Dallas, TX",      revenue:"$8.47M", contacts:3, deals:3 },
+  { id:"c6", type:"company", name:"Coastal Behavioral Health",industry:"Behavioral Health",      vertical:"healthcare",    lat:27.9478, lng:-82.4580, city:"Tampa, FL",       revenue:"$1.92M", contacts:2, deals:1 },
+  { id:"c7", type:"company", name:"Harmon Industrial Supply", industry:"Industrial Supply",      vertical:"manufacturing", lat:41.4993, lng:-81.6944, city:"Cleveland, OH",   revenue:"$14.2M", contacts:2, deals:2 },
+  { id:"c8", type:"company", name:"Pacific Fabrication Co",   industry:"Metal Fabrication",      vertical:"manufacturing", lat:45.5152, lng:-122.678, city:"Portland, OR",    revenue:"$24.8M", contacts:3, deals:4 },
+  { id:"c9", type:"company", name:"Apex Composite Materials", industry:"Aerospace Composites",   vertical:"manufacturing", lat:41.7658, lng:-72.6734, city:"Hartford, CT",    revenue:"$6.84M", contacts:2, deals:1 },
   { id:"p1", type:"contact", name:"Sarah Mitchell",    industry:"Managing Broker",   vertical:"real_estate",   lat:25.78,  lng:-80.18,  city:"Miami, FL",     revenue:"$48.6K LTV", contacts:0, deals:4 },
-  { id:"p2", type:"contact", name:"Marcus Jimenez",    industry:"Practice Director", vertical:"healthcare",    lat:32.80,  lng:-96.78,  city:"Dallas, TX",    revenue:"$32K LTV",   contacts:0, deals:3 },
-  { id:"p3", type:"contact", name:"Greg Harmon",       industry:"VP Operations",     vertical:"manufacturing", lat:41.52,  lng:-81.68,  city:"Cleveland, OH", revenue:"$168K LTV",  contacts:0, deals:2 },
-  { id:"p4", type:"contact", name:"Lisa Chen",         industry:"CFO",               vertical:"manufacturing", lat:45.53,  lng:-122.66, city:"Portland, OR",  revenue:"$72K LTV",   contacts:0, deals:4 },
-  { id:"p5", type:"contact", name:"David Park",        industry:"Owner",             vertical:"real_estate",   lat:27.97,  lng:-82.46,  city:"Tampa, FL",     revenue:"$22K LTV",   contacts:0, deals:2 },
+  { id:"p2", type:"contact", name:"Marcus Jimenez",    industry:"Managing Partner", vertical:"healthcare",    lat:32.80,  lng:-96.78,  city:"Dallas, TX",    revenue:"$134K LTV",  contacts:0, deals:3 },
+  { id:"p3", type:"contact", name:"Greg Harmon",       industry:"VP Procurement",   vertical:"manufacturing", lat:41.52,  lng:-81.68,  city:"Cleveland, OH", revenue:"$142.6K LTV",contacts:0, deals:2 },
+  { id:"p4", type:"contact", name:"Dr. Linda Okafor",  industry:"Practice Owner",   vertical:"healthcare",    lat:41.88,  lng:-87.63,  city:"Chicago, IL",   revenue:"$42K LTV",   contacts:0, deals:2 },
+  { id:"p5", type:"contact", name:"James Patel",       industry:"Purchasing Director",vertical:"manufacturing", lat:41.77,  lng:-72.67,  city:"Hartford, CT",  revenue:"$56K LTV",   contacts:0, deals:1 },
 ];
 
 const VERT_COLORS: Record<string,string> = {
-  real_estate:"#00C896", healthcare:"#3B9EFF", manufacturing:"#A78BFA",
+  real_estate:"#00C896", healthcare:"#3B9EFF", manufacturing:"#F59E0B",
 };
 
 type Loc = typeof LOCATIONS[0];
 
 export default function MapView({ vertId, onSelectContact }:{ vertId:string; onSelectContact?:(c:Loc)=>void }) {
   const [filter, setFilter]         = useState<"all"|"company"|"contact">("all");
-  const [vertFilter, setVertFilter] = useState<string>("all");
+  const [vertFilter, setVertFilter] = useState<string>(vertId || "all");
   const [leafletReady, setLeafletReady] = useState(false);
   const [selected, setSelected]     = useState<Loc|null>(null);
   const { toast, toasts, dismiss }  = useToast();
@@ -44,6 +44,10 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
   });
   const companies = filtered.filter(l => l.type === "company");
   const contacts  = filtered.filter(l => l.type === "contact");
+
+  useEffect(() => {
+    setVertFilter(vertId || "all");
+  }, [vertId]);
 
   // Load Leaflet CSS + JS from CDN once
   useEffect(() => {

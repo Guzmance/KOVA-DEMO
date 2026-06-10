@@ -35,9 +35,15 @@ const PIPE_ICON_EMOJIS: Record<string, string> = { Inbox: "📥", Filter: "🧹"
 
 function LkIcon({ m, n, size, color, emoji }: { m: IconMap; n: string; size: number; color?: string; emoji?: string }) {
   const { emojiMode } = useIconMode();
-  if (emojiMode && emoji) return <span style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{emoji}</span>;
-  const Ic = m[n];
-  return Ic ? <Ic size={size} color={color} /> : null;
+  const key = (n || "").trim();
+  const Ic = m[key];
+  if (emojiMode) {
+    if (emoji) return <span style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{emoji}</span>;
+    return Ic ? <Ic size={size} color={color} /> : null;
+  }
+  if (Ic) return <Ic size={size} color={color} />;
+  if (emoji) return <span style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{emoji}</span>;
+  return null;
 }
 
 function copyDeals(id: string): Record<string, Deal[]> {
@@ -383,7 +389,7 @@ export default function CRM() {
           <div style={{fontSize:11,color:"#64748B",marginTop:2}}>
             {pipeRunning ? <span className="kpulse" style={{color:"#00C896"}}>● Processing record…</span>
             : pipeDone ? <span style={{color:"#00C896"}}>● {pipeCount} record{pipeCount!==1?"s":""} processed this session</span>
-            : <span style={{color:"#475569"}}>● Idle — click Run to simulate</span>}
+            : <span style={{color:"#475569"}}>● Idle — click Run</span>}
           </div>
         </div>
         <button onClick={runPipeline} disabled={pipeRunning} style={{padding:"9px 20px",background:pipeRunning?"#334155":P,color:pipeRunning?"#94A3B8":"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
@@ -946,7 +952,7 @@ export default function CRM() {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,padding:"14px 16px",background:"linear-gradient(135deg,#0F172A,#1E293B)",borderRadius:10}}>
         <div>
           <div style={{fontSize:13,fontWeight:700,color:"#F1F5F9"}}>Weekly Intelligence Briefing</div>
-          <div style={{fontSize:11,color:"#64748B",marginTop:2,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={11} color="#64748B" emoji={VERT_ICON_EMOJIS[vert.icon]} />{vert.label} · Powered by Claude AI</div>
+          <div style={{fontSize:11,color:"#64748B",marginTop:2,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={11} color="#64748B" emoji={vert.emoji || VERT_ICON_EMOJIS[vert.icon]} />{vert.label} · Powered by Claude AI</div>
         </div>
         <button onClick={generateReport} disabled={genLoading} style={{padding:"8px 18px",background:genLoading?"#334155":P,color:genLoading?"#94A3B8":"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer"}}>
           {genLoading?"Claude is writing…":<><IE emoji="⚡" Icon={Zap} size={13} />Generate Report</>}
@@ -962,7 +968,7 @@ export default function CRM() {
         </div>
       ):(
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"40px",textAlign:"center",color:"#94A3B8"}}>
-          <div style={{marginBottom:12}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={32} color="#94A3B8" emoji={VERT_ICON_EMOJIS[vert.icon]} /></div>
+          <div style={{marginBottom:12}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={32} color="#94A3B8" emoji={vert.emoji || VERT_ICON_EMOJIS[vert.icon]} /></div>
           <div style={{fontSize:14,fontWeight:600,color:"#64748B",marginBottom:4}}>No report yet</div>
           <div style={{fontSize:12}}>Click "Generate Report" — Claude writes your {vert.label} briefing live in ~5 seconds</div>
         </div>
@@ -992,7 +998,7 @@ export default function CRM() {
           <div style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>{c.fn} {c.ln}</div>
           <div style={{fontSize:11,color:"#64748B"}}>{c.co}</div>
           <div style={{display:"flex",gap:5,justifyContent:"center",marginTop:6,flexWrap:"wrap"}}>
-            <span style={{fontSize:10,background:P+"15",color:P,padding:"2px 8px",borderRadius:99,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={10} color={P} emoji={VERT_ICON_EMOJIS[vert.icon]} />{vert.label}</span>
+            <span style={{fontSize:10,background:P+"15",color:P,padding:"2px 8px",borderRadius:99,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={10} color={P} emoji={vert.emoji || VERT_ICON_EMOJIS[vert.icon]} />{vert.label}</span>
             {ld&&<span style={{fontSize:10,background:"#F0FDF4",color:"#15803D",padding:"2px 8px",borderRadius:99,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><IE emoji="✅" Icon={Check} size={10} color="#15803D" />Live Claude Score</span>}
           </div>
         </div>
@@ -1069,7 +1075,7 @@ export default function CRM() {
         <div style={{padding:"8px 9px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)",marginBottom:6,position:"relative"}}>
           <div style={{fontSize:16,fontWeight:800,color:"#F1F5F9",letterSpacing:"-0.3px",marginBottom:5}}>KOVA</div>
           <button onClick={()=>setVertOpen(!vertOpen)} style={{display:"flex",alignItems:"center",gap:5,background:P+"20",border:`1px solid ${P}44`,borderRadius:6,padding:"5px 8px",cursor:"pointer",width:"100%",justifyContent:"space-between"}}>
-            <span style={{display:"flex",alignItems:"center",gap:5}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={13} color={P} emoji={VERT_ICON_EMOJIS[vert.icon]} /><span style={{fontSize:11,fontWeight:600,color:P}}>{vert.label}</span></span>
+            <span style={{display:"flex",alignItems:"center",gap:5}}><LkIcon m={VERT_ICON_MAP} n={vert.icon} size={13} color={P} emoji={vert.emoji || VERT_ICON_EMOJIS[vert.icon]} /><span style={{fontSize:11,fontWeight:600,color:P}}>{vert.label}</span></span>
             <span style={{color:P,fontSize:9,transition:"transform .15s",display:"inline-block",transform:vertOpen?"rotate(180deg)":"rotate(0)"}}>▼</span>
           </button>
           {vertOpen&&(
@@ -1077,7 +1083,7 @@ export default function CRM() {
               <div style={{padding:"8px 10px 4px",fontSize:9,color:"#475569",letterSpacing:"2px",textTransform:"uppercase"}}>Switch Vertical</div>
               {ALL_VERTICALS.map(v=>(
                 <button key={v.id} onClick={()=>switchVertical(v.id)} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 10px",background:v.id===vertId?`${v.color}20`:"transparent",border:"none",cursor:"pointer",textAlign:"left",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                  <LkIcon m={VERT_ICON_MAP} n={v.icon} size={15} color={v.id===vertId?v.color:"#CBD5E1"} emoji={VERT_ICON_EMOJIS[v.icon]} />
+                  <LkIcon m={VERT_ICON_MAP} n={v.icon} size={15} color={v.id===vertId?v.color:"#CBD5E1"} emoji={v.emoji || VERT_ICON_EMOJIS[v.icon]} />
                   <div>
                     <div style={{fontSize:12,fontWeight:600,color:v.id===vertId?v.color:"#CBD5E1"}}>{v.label}</div>
                     <div style={{fontSize:9,color:"#475569"}}>{CONTACTS.filter(c=>c.vertical===v.id).length} contacts</div>

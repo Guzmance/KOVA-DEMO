@@ -1,16 +1,16 @@
 import type { Contact, Company, Deal, Activity } from "./types";
 
-export const VERTICAL_CONFIG: Record<string, { label: string; icon: string; color: string; accent: string; signals: string[] }> = {
+export const VERTICAL_CONFIG: Record<string, { label: string; icon: string; emoji: string; color: string; accent: string; signals: string[] }> = {
   real_estate: {
-    label: "Real Estate", icon: "Home", color: "#00C896", accent: "#007A5C",
+    label: "Real Estate", icon: "Home", emoji: "🏠", color: "#00C896", accent: "#007A5C",
     signals: ["Distress Index","Equity Score","Sellability","Days Vacant","Tax Delinquency"],
   },
   healthcare: {
-    label: "Healthcare", icon: "HeartPulse", color: "#3B9EFF", accent: "#1D4ED8",
+    label: "Healthcare", icon: "HeartPulse", emoji: "🏥", color: "#3B9EFF", accent: "#1D4ED8",
     signals: ["Practice Growth","Referral Volume","Payer Mix Score","Compliance Risk","Expansion Signal"],
   },
   manufacturing: {
-    label: "Manufacturing", icon: "Factory", color: "#F59E0B", accent: "#B45309",
+    label: "Manufacturing", icon: "Factory", emoji: "🏭", color: "#F59E0B", accent: "#B45309",
     signals: ["Procurement Signal","Financial Health","Growth Velocity","Supply Chain Risk","Equipment Need"],
   },
 };
