@@ -168,8 +168,7 @@ export default function PipelineViz() {
 
   return (
     <div style={{background:"#040810",minHeight:"100%",fontFamily:"'JetBrains Mono',monospace",userSelect:"none",overflow:"hidden"}}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+      <style suppressHydrationWarning>{`
         * { box-sizing:border-box; }
         .stage-card { transition: box-shadow 0.3s, border-color 0.3s; }
         .stage-card:hover { filter:brightness(1.08); }
