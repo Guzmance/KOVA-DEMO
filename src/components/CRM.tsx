@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   LayoutDashboard, Users, Building2, TrendingUp, ClipboardList, Ruler,
-  FolderOpen, DollarSign, Map, Workflow, MessageSquare, LayoutList,
+  FolderOpen, DollarSign, Map, Target, MessageSquare, LayoutList,
   BarChart2, Zap, Settings, Search, Bell, Sparkles, Upload, Camera,
   RefreshCw, Play, Check, CheckCircle2, Brain, BarChart3,
   Phone, Mail, FileText, Home, HeartPulse, Factory,
@@ -59,6 +59,8 @@ export default function CRM() {
   const [showDocAgent, setShowDocAgent] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact|null>(null);
   const [showScanModal, setShowScanModal] = useState(false);
+  const [docsInitialTab, setDocsInitialTab] = useState("po");
+  const [savedEstDocs,   setSavedEstDocs]   = useState<any[]>([]);
   const [contactsView, setContactsView] = useState<"list"|"map">("list");
   const [modalData, setModalData] = useState<any>(null);
   const [cFilter, setCFilter]     = useState("all");
@@ -77,6 +79,7 @@ export default function CRM() {
 
   // ── Pipeline state ────────────────────────────────────────────────────────
   const [pipeStep, setPipeStep]     = useState(-1);
+  const [dealsTab, setDealsTab]       = useState<"kanban"|"flow">("kanban");
   const [pipeRunning, setPipeRunning] = useState(false);
   const [pipeRecord, setPipeRecord] = useState<Contact|null>(null);
   const [pipeDone, setPipeDone]     = useState(false);
@@ -91,6 +94,16 @@ export default function CRM() {
   const [newDealForm, setNewDealForm]     = useState({title:"",co:"",contact:"",val:"",prob:"50",close:""});
   const [localContacts, setLocalContacts] = useState<Contact[]>([]);
   const [newContactForm, setNewContactForm] = useState({firstName:"",lastName:"",company:"",email:"",phone:""});
+  const [smsMessages, setSmsMessages]     = useState<{from:string,text:string,time:string}[]>([]);
+  const [emailMessages, setEmailMessages] = useState<{from:string,subject:string,time:string,preview:string}[]>([]);
+  const [callHistory, setCallHistory]     = useState<{type:string,duration:string,time:string,notes:string}[]>([]);
+  const [callActive, setCallActive]   = useState(false);
+  const [callRinging, setCallRinging] = useState(false);
+  const [callSeconds, setCallSeconds] = useState(0);
+  const callTimerRef = useRef<any>(null);
+  const smsEndRef     = useRef<HTMLDivElement>(null);
+  const emailEndRef   = useRef<HTMLDivElement>(null);
+  const callNotesRef  = useRef<HTMLTextAreaElement>(null);
   const { toast, toasts, dismiss } = useToast();
 
   // ── Score All state ───────────────────────────────────────────────────────
@@ -116,6 +129,46 @@ export default function CRM() {
   const wonVal     = (DEALS["Closed Won"]||[]).reduce((a,d)=>a+d.val,0);
 
   useEffect(()=>{ nlBottomRef.current?.scrollIntoView({behavior:"smooth"}); },[nlHistory,nlLoading]);
+
+  useEffect(()=>{
+    if(!selC){ setSmsMessages([]); setEmailMessages([]); setCallHistory([]); return; }
+    setSmsMessages([
+      {from:"contact",text:"Hey, wanted to follow up on the proposal you sent over last week.",time:"Jun 5 · 10:14 AM"},
+      {from:"me",text:`Hi ${selC.fn}! Great timing — happy to walk you through it. Free this Thursday?`,time:"Jun 5 · 10:32 AM"},
+      {from:"contact",text:"Thursday 3pm works. Send the calendar invite.",time:"Jun 5 · 11:01 AM"},
+    ]);
+    setEmailMessages([
+      {from:"me",subject:"KOVA Platform — Q3 Proposal",time:"Jun 7 · 9:15 AM",preview:`Hi ${selC.fn}, following up on our conversation — attaching the Q3 proposal for your review.`},
+      {from:"contact",subject:"Re: KOVA Platform — Q3 Proposal",time:"Jun 7 · 2:43 PM",preview:"Thanks! I've reviewed it with the team. A few questions before we move forward…"},
+    ]);
+    setCallHistory([
+      {type:"outbound",duration:"12 min",time:"Jun 7 · 3:00 PM",notes:"Discussed Q3 budget allocation. Strong interest in full package."},
+      {type:"inbound", duration:"4 min", time:"Jun 5 · 11:22 AM",notes:"Returned my call. Reviewing proposal with team this week."},
+      {type:"outbound",duration:"8 min", time:"Jun 2 · 10:00 AM",notes:"Initial discovery — confirmed key pain points around reporting."},
+    ]);
+  },[selC?.id]);
+
+  useEffect(()=>{ smsEndRef.current?.scrollIntoView({behavior:"smooth"}); },[smsMessages]);
+  useEffect(()=>{ emailEndRef.current?.scrollIntoView({behavior:"smooth"}); },[emailMessages]);
+
+  useEffect(()=>{
+    if(callActive && !callRinging){
+      callTimerRef.current = setInterval(()=>setCallSeconds(s=>s+1),1000);
+    }
+    return ()=>clearInterval(callTimerRef.current);
+  },[callActive,callRinging]);
+
+  const startCall = ()=>{ setCallActive(true); setCallRinging(true); setCallSeconds(0); setTimeout(()=>setCallRinging(false),2500); };
+  const hangUp    = ()=>{
+    clearInterval(callTimerRef.current);
+    if(callSeconds>0){
+      const mins=Math.floor(callSeconds/60), secs=callSeconds%60;
+      const dur=mins>0?`${mins} min ${secs>0?secs+" sec":""}`:`${secs} sec`;
+      setCallHistory(p=>[{type:"outbound",duration:dur.trim(),time:"Just now",notes:"Call ended — add notes below."}, ...p]);
+    }
+    setCallActive(false); setCallRinging(false); setCallSeconds(0);
+  };
+  const fmtCall   = (s:number)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 
   const switchVertical = (id:string) => {
     setVertId(id); setVertOpen(false); setView("dashboard");
@@ -291,10 +344,10 @@ export default function CRM() {
       </div>
       {/* Quick actions row */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-        <button onClick={()=>goView("pipeline")} style={{padding:"12px",background:"linear-gradient(135deg,#0F172A,#1E293B)",border:"none",borderRadius:10,cursor:"pointer",textAlign:"left"}}>
-          <div style={{marginBottom:4}}><IE emoji="🔄" Icon={RefreshCw} size={18} color="#F1F5F9" /></div>
-          <div style={{fontSize:12,fontWeight:700,color:"#F1F5F9"}}>Run Pipeline</div>
-          <div style={{fontSize:10,color:"#64748B",marginTop:1}}>Watch data flow live</div>
+        <button onClick={()=>goView("deals")} style={{padding:"12px",background:"linear-gradient(135deg,#0F172A,#1E293B)",border:"none",borderRadius:10,cursor:"pointer",textAlign:"left"}}>
+          <div style={{marginBottom:4}}><IE emoji="🎯" Icon={Target} size={18} color="#F1F5F9" /></div>
+          <div style={{fontSize:12,fontWeight:700,color:"#F1F5F9"}}>Opportunities</div>
+          <div style={{fontSize:10,color:"#64748B",marginTop:1}}>View & manage pipeline</div>
         </button>
         <button onClick={()=>goView("ask")} style={{padding:"12px",background:`linear-gradient(135deg,${P}22,${P}11)`,border:`1px solid ${P}33`,borderRadius:10,cursor:"pointer",textAlign:"left"}}>
           <div style={{marginBottom:4}}><IE emoji="💬" Icon={MessageSquare} size={18} color={P} /></div>
@@ -556,18 +609,86 @@ export default function CRM() {
               <button key={t} onClick={()=>setOTab(t)} style={{flex:1,padding:"5px",borderRadius:5,border:"none",background:oTab===t?"#fff":"transparent",color:oTab===t?"#0F172A":"#64748B",fontSize:11,fontWeight:oTab===t?600:400,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{t==="sms"?<><IE emoji="💬" Icon={MessageSquare} size={11} />SMS</>:t==="email"?<><IE emoji="✉️" Icon={Mail} size={11} />Email</>:<><IE emoji="📞" Icon={Phone} size={11} />Call</>}</button>
             ))}
           </div>
-          {oTab!=="call"?(
+          {oTab==="sms" && (
             <>
-              <textarea ref={msgRef} defaultValue={defaultMsg(selC)} rows={3} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,color:"#0F172A",resize:"none",background:"#F8FAFC"}} />
+              <div style={{height:118,overflowY:"auto",marginBottom:7,display:"flex",flexDirection:"column",gap:5}}>
+                {smsMessages.map((m,i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:m.from==="me"?"flex-end":"flex-start"}}>
+                    <div style={{maxWidth:"76%",padding:"6px 9px",borderRadius:m.from==="me"?"10px 10px 2px 10px":"10px 10px 10px 2px",background:m.from==="me"?P:"#F1F5F9",color:m.from==="me"?"#fff":"#0F172A",fontSize:10,lineHeight:1.4}}>
+                      {m.text}
+                      <div style={{fontSize:9,opacity:0.55,marginTop:2,textAlign:m.from==="me"?"right":"left"}}>{m.time}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={smsEndRef} />
+              </div>
+              <textarea ref={msgRef} defaultValue={defaultMsg(selC)} rows={2} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,color:"#0F172A",resize:"none",background:"#F8FAFC"}} />
               <div style={{display:"flex",gap:6,marginTop:6}}>
-                <button onClick={()=>toast(`${oTab==="sms"?"SMS":"Email"} sent to ${selC.fn}`)} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
-                <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),oTab)} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{personalizing?"Writing…":<><IE emoji="✨" Icon={Sparkles} size={11} />AI Personalize</>}</button>
+                <button onClick={()=>{
+                  const txt=(msgRef.current?.value||"").trim();
+                  if(!txt) return;
+                  setSmsMessages(p=>[...p,{from:"me",text:txt,time:"Just now"}]);
+                  if(msgRef.current) msgRef.current.value="";
+                }} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
+                <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),"sms")} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{personalizing?"Writing…":<><IE emoji="✨" Icon={Sparkles} size={11} />AI Personalize</>}</button>
               </div>
             </>
-          ):(
+          )}
+          {oTab==="email" && (
             <>
-              <textarea rows={3} placeholder="Log call notes…" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,resize:"none",background:"#F8FAFC"}} />
-              <button onClick={()=>toast("Call logged successfully")} style={{width:"100%",marginTop:6,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Log Call</button>
+              <div style={{maxHeight:138,overflowY:"auto",marginBottom:7,display:"flex",flexDirection:"column",gap:5}}>
+                {emailMessages.map((e,i)=>(
+                  <div key={i} style={{padding:"7px 10px",borderRadius:7,background:"#F8FAFC",border:"1px solid #E2E8F0",borderLeft:`3px solid ${e.from==="me"?P:"#CBD5E1"}`,flexShrink:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                      <span style={{fontSize:10,fontWeight:700,color:"#0F172A"}}>{e.from==="me"?"You":selC.fn}</span>
+                      <span style={{fontSize:9,color:"#94A3B8"}}>{e.time}</span>
+                    </div>
+                    <div style={{fontSize:10,fontWeight:600,color:"#334155",marginBottom:2}}>{e.subject}</div>
+                    <div style={{fontSize:10,color:"#64748B",lineHeight:1.4}}>{e.preview.length>64?e.preview.substring(0,64)+"…":e.preview}</div>
+                  </div>
+                ))}
+                <div ref={emailEndRef} />
+              </div>
+              <textarea ref={msgRef} defaultValue={defaultMsg(selC)} rows={2} style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,color:"#0F172A",resize:"none",background:"#F8FAFC"}} />
+              <div style={{display:"flex",gap:6,marginTop:6}}>
+                <button onClick={()=>{
+                  const txt=(msgRef.current?.value||"").trim();
+                  if(!txt) return;
+                  const lastSubj = emailMessages.length>0 ? emailMessages[emailMessages.length-1].subject : "Follow-Up";
+                  const subj = lastSubj.startsWith("Re:") ? lastSubj : `Re: ${lastSubj}`;
+                  setEmailMessages(p=>[...p,{from:"me",subject:subj,time:"Just now",preview:txt}]);
+                  if(msgRef.current) msgRef.current.value="";
+                }} style={{flex:1,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Send</button>
+                <button onClick={()=>personalizeMsg(selC,msgRef.current?.value||defaultMsg(selC),"email")} disabled={personalizing} style={{flex:1,padding:"7px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{personalizing?"Writing…":<><IE emoji="✨" Icon={Sparkles} size={11} />AI Personalize</>}</button>
+              </div>
+            </>
+          )}
+          {oTab==="call" && (
+            <>
+              <button onClick={startCall} style={{width:"100%",marginBottom:8,padding:"8px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <IE emoji="📞" Icon={Phone} size={12} /> Start Call
+              </button>
+              <div style={{maxHeight:130,overflowY:"auto",marginBottom:7,display:"flex",flexDirection:"column",gap:4}}>
+                {callHistory.map((c,i)=>(
+                  <div key={i} style={{display:"flex",gap:7,alignItems:"flex-start",padding:"6px 8px",borderRadius:6,background:"#F8FAFC",border:"1px solid #E2E8F0",flexShrink:0}}>
+                    <IE emoji={c.type==="inbound"?"📲":"📞"} Icon={Phone} size={13} color={c.type==="inbound"?P:"#64748B"} />
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",justifyContent:"space-between"}}>
+                        <span style={{fontSize:10,fontWeight:600,color:"#0F172A",textTransform:"capitalize"}}>{c.type} · {c.duration}</span>
+                        <span style={{fontSize:9,color:"#94A3B8"}}>{c.time}</span>
+                      </div>
+                      <div style={{fontSize:10,color:"#64748B",lineHeight:1.4,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <textarea ref={callNotesRef} rows={2} placeholder="Log call notes…" style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 9px",fontSize:11,resize:"none",background:"#F8FAFC",color:"#0F172A"}} />
+              <button onClick={()=>{
+                const notes=(callNotesRef.current?.value||"").trim();
+                if(!notes) return;
+                setCallHistory(p=>[{type:"outbound",duration:"just now",time:"Just now",notes},  ...p]);
+                if(callNotesRef.current) callNotesRef.current.value="";
+              }} style={{width:"100%",marginTop:6,padding:"7px",background:"#0F172A",color:"#fff",border:"none",borderRadius:6,fontSize:11,fontWeight:600,cursor:"pointer"}}>Log Call</button>
             </>
           )}
         </div>
@@ -648,7 +769,7 @@ export default function CRM() {
           <Breadcrumb className="mb-3">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink onClick={()=>setSelD(null)}>Pipeline</BreadcrumbLink>
+                <BreadcrumbLink onClick={()=>setSelD(null)}>Opportunities</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -704,8 +825,43 @@ export default function CRM() {
         </div>
       );
     }
+    const openCount = Object.values(pipeDeals).flat().length;
+    const openVal   = Object.values(pipeDeals).flat().reduce((a,d)=>a+d.val,0);
+    const wonCount  = (pipeDeals["Closed Won"]||[]).length;
+    const wonValOpp = (pipeDeals["Closed Won"]||[]).reduce((a,d)=>a+d.val,0);
     return (
-      <div style={{display:"flex",gap:9,overflowX:"auto",height:"calc(100vh - 130px)"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:10,height:"calc(100vh - 100px)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:"#0F172A"}}>Opportunities</div>
+              <div style={{fontSize:11,color:"#64748B",marginTop:1}}>{dealsTab==="kanban"?"Drag cards to advance · Click to open":"Live data pipeline — 9 processing stages"}</div>
+            </div>
+            {/* Tab toggle */}
+            <div style={{display:"flex",background:"#F1F5F9",borderRadius:8,padding:2,gap:2}}>
+              {([["kanban","Kanban"],["flow","Pipeline Flow"]] as [string,string][]).map(([id,label])=>(
+                <button key={id} onClick={()=>setDealsTab(id as "kanban"|"flow")}
+                  style={{fontSize:10,padding:"4px 10px",borderRadius:6,border:"none",background:dealsTab===id?"#fff":"transparent",color:dealsTab===id?"#0F172A":"#64748B",fontWeight:dealsTab===id?700:400,cursor:"pointer",boxShadow:dealsTab===id?"0 1px 3px rgba(0,0,0,0.08)":"none"}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {[[openCount+" open","#0F172A",fv(openVal)+" pipeline"],[wonCount+" won","#15803D",fv(wonValOpp)+" closed"]].map(([l,c,sub])=>(
+              <div key={l as string} style={{padding:"6px 14px",background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:700,color:c as string}}>{l}</div>
+                <div style={{fontSize:10,color:"#94A3B8"}}>{sub}</div>
+              </div>
+            ))}
+            {dealsTab==="kanban"&&<button onClick={()=>{setNewDealStage(ALL_STAGES[0]);setModal("create");}} style={{padding:"6px 14px",background:"#0F172A",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add Opportunity</button>}
+          </div>
+        </div>
+        {/* Pipeline Flow tab */}
+        {dealsTab==="flow" && renderPipeline()}
+        {/* Kanban */}
+        {dealsTab==="kanban" && <div style={{display:"flex",gap:9,overflowX:"auto",flex:1}}>
         {ALL_STAGES.map(stage=>{
           const deals = pipeDeals[stage]||[];
           const isOver = dragOverStage===stage;
@@ -740,6 +896,7 @@ export default function CRM() {
             </div>
           );
         })}
+        </div>}
       </div>
     );
   };
@@ -885,22 +1042,21 @@ export default function CRM() {
     </div>
   );
 
-  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Pipeline",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Document Center",finance:"Financial Hub",estimates:"Estimate Builder",map:"Map View"};
+  const titles:Record<string,string>={dashboard:"Dashboard",contacts:"Contacts",companies:"Companies",deals:"Opportunities",lists:"List Builder",reports:"Reports",activity:"Activity",pipeline:"Data Pipeline",ask:"Ask Your Data",quotes:"Quotes & Proposals",docs:"Documents",finance:"Financial Hub",estimates:"Estimate Builder",map:"Map View"};
   const NAV: [string, React.ComponentType<any>, string, string][] = [
-    ["dashboard", LayoutDashboard, "Dashboard", "📊"],
-    ["contacts",  Users,           "Contacts",  "👥"],
-    ["companies", Building2,       "Companies", "🏢"],
-    ["deals",     TrendingUp,      "Pipeline",  "📈"],
-    ["quotes",    ClipboardList,   "Quotes",    "📋"],
-    ["estimates", Ruler,           "Estimates", "📐"],
-    ["docs",      FolderOpen,      "Documents", "🗂️"],
-    ["finance",   DollarSign,      "Financials","💰"],
-    ["map",       Map,             "Map",       "🗺️"],
-    ["pipeline",  Workflow,        "Data Flow", "🔄"],
-    ["ask",       MessageSquare,   "Ask AI",    "💬"],
-    ["lists",     LayoutList,      "Lists",     "🗂️"],
-    ["reports",   BarChart2,       "Reports",   "📰"],
-    ["activity",  Zap,             "Activity",  "⚡"],
+    ["dashboard",     LayoutDashboard, "Dashboard",     "📊"],
+    ["contacts",      Users,           "Contacts",      "👥"],
+    ["companies",     Building2,       "Companies",     "🏢"],
+    ["deals",         Target,          "Opportunities", "🎯"],
+    ["quotes",        ClipboardList,   "Quotes",        "📋"],
+    ["estimates",     Ruler,           "Estimates",     "📐"],
+    ["docs",          FolderOpen,      "Documents",     "🗂️"],
+    ["finance",       DollarSign,      "Financials",    "💰"],
+    ["map",           Map,             "Map",           "🗺️"],
+    ["ask",           MessageSquare,   "Ask AI",        "💬"],
+    ["lists",         LayoutList,      "Lists",         "🗂️"],
+    ["reports",       BarChart2,       "Reports",       "📰"],
+    ["activity",      Zap,             "Activity",      "⚡"],
   ];
 
   return(
@@ -1037,13 +1193,77 @@ export default function CRM() {
               if(match){setSelCo(match);goView("companies");}
             }
           }} />}
-          {view==="docs"        && <DocumentCenter vertId={vertId} />}
+          {view==="docs"        && <DocumentCenter vertId={vertId} onNewEstimate={()=>goView("estimates")} initialTab={docsInitialTab} extraDocs={savedEstDocs} />}
           {view==="finance"     && <FinancialHub />}
-          {view==="estimates"   && <EstimateBuilder vertId={vertId} />}
+          {view==="estimates"   && <EstimateBuilder vertId={vertId} onSave={(data)=>{
+            if(data){
+              const today = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+              const due   = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+              setSavedEstDocs(p=>[...p,{
+                id:"est"+Date.now(), type:"estimate", templateId:"", number:"EST-2026-"+String(400+p.length+2),
+                title:data.title||"New Estimate", contact:data.contact, company:data.company, email:data.email,
+                vendor:"",vendorContact:"",status:"draft",created:today,dueDate:due,
+                companyName:"KOVA Services LLC",companyAddress:"Tampa, FL",
+                lines:data.lines, tax:data.tax, notes:data.notes, terms:data.terms,
+                accentColor:"#F97316",font:"Inter",
+              }]);
+            }
+            setDocsInitialTab("estimate"); goView("docs");
+          }} onAddToPipeline={(d)=>{
+            const newDeal = { id: Date.now(), title: d.title, co: d.co, contact: d.contact, val: d.val, prob: 50, close: new Date(Date.now()+30*24*60*60*1000).toISOString().split("T")[0], stage_hist: [ALL_STAGES[0]] };
+            setPipeDeals(prev=>{ const n={...prev}; n[ALL_STAGES[0]]=[...(n[ALL_STAGES[0]]||[]),newDeal]; return n; });
+            setDealsTab("kanban");
+            goView("deals");
+          }} />}
         </div>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* ── Active Call Modal ── */}
+      {callActive && selC && (
+        <div style={{position:"fixed",inset:0,background:"rgba(10,15,40,0.88)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(10px)"}}>
+          <div style={{background:"linear-gradient(160deg,#0f1f4a 0%,#0a1330 100%)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:24,width:280,padding:"36px 24px 28px",display:"flex",flexDirection:"column",alignItems:"center",gap:16,boxShadow:"0 32px 80px rgba(0,0,0,0.6)"}}>
+            {/* Avatar */}
+            <div style={{width:72,height:72,borderRadius:"50%",background:P+"25",border:`2px solid ${P}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:P}}>
+              {ini(selC.fn,selC.ln)}
+            </div>
+            {/* Name & number */}
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:18,fontWeight:700,color:"#fff",marginBottom:4}}>{selC.fn} {selC.ln}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.45)"}}>{selC.phone||"+1 (555) 234-5678"}</div>
+            </div>
+            {/* Status / timer */}
+            {callRinging ? (
+              <div style={{fontSize:13,color:P,fontWeight:600,letterSpacing:"0.04em",animation:"pulse 1.4s ease-in-out infinite"}}>
+                Calling…
+              </div>
+            ) : (
+              <div style={{fontSize:22,color:"#fff",fontWeight:300,fontVariantNumeric:"tabular-nums",letterSpacing:"0.05em"}}>
+                {fmtCall(callSeconds)}
+              </div>
+            )}
+            {/* Action buttons */}
+            {!callRinging && (
+              <div style={{display:"flex",gap:20,marginTop:4}}>
+                {[["🔇","Mute"],["🔊","Speaker"],["⌨️","Keypad"]].map(([em,lbl])=>(
+                  <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                    <button style={{width:46,height:46,borderRadius:"50%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {em}
+                    </button>
+                    <span style={{fontSize:9,color:"rgba(255,255,255,0.4)"}}>{lbl}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Hang up */}
+            <button onClick={hangUp} style={{marginTop:8,width:64,height:64,borderRadius:"50%",background:"#EF4444",border:"none",fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(239,68,68,0.45)"}}>
+              📵
+            </button>
+            <span style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:-8}}>Hang Up</span>
+          </div>
+        </div>
+      )}
 
       {showScanModal && (
         <CardScanModal

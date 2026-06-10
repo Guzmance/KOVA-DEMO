@@ -65,10 +65,34 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
     if (!leafletReady || !mapDivRef.current || leafletMap.current) return;
     const L = (window as any).L;
     const map = L.map(mapDivRef.current, { center:[39.5,-98.35], zoom:4, zoomControl:true });
+    // Inject CSS to give tiles a navy-blue tint
+    if (!document.getElementById("kova-tile-navy")) {
+      const st = document.createElement("style");
+      st.id = "kova-tile-navy";
+      st.textContent = ".kova-navy-tile { filter: hue-rotate(200deg) saturate(4) brightness(0.8); }";
+      document.head.appendChild(st);
+    }
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      { attribution:'© <a href="https://openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', subdomains:"abcd", maxZoom:19 }
+      { attribution:'© <a href="https://openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', subdomains:"abcd", maxZoom:19, className:"kova-navy-tile" }
     ).addTo(map);
+    // US states overlay — green fill on dark background
+    fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
+      .then(r => r.json())
+      .then(data => {
+        if (!leafletMap.current) return;
+        L.geoJSON(data, {
+          interactive: false,
+          style: {
+            fillColor: "#00C896",
+            fillOpacity: 0.08,
+            color: "#00C896",
+            weight: 0.8,
+            opacity: 0.4,
+          }
+        }).addTo(map);
+      })
+      .catch(() => {});
     leafletMap.current = map;
     return () => { map.remove(); leafletMap.current = null; };
   }, [leafletReady]);
@@ -146,7 +170,7 @@ export default function MapView({ vertId, onSelectContact }:{ vertId:string; onS
       </div>
 
       {/* Map container */}
-      <div style={{borderRadius:12,overflow:"hidden",height:400,marginBottom:12,position:"relative",background:"#0F172A"}}>
+      <div style={{borderRadius:12,overflow:"hidden",height:400,marginBottom:12,position:"relative",background:"#0A1640"}}>
         {!leafletReady && (
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.35)",fontSize:13,zIndex:1}}>
             Loading map…

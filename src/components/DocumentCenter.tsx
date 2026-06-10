@@ -81,17 +81,17 @@ const SAMPLE_DOCS: DocRecord[] = [
 const DOC_TYPES = [
   { id:"po",          label:"Purchase Orders",  icon:"ShoppingCart", color:"#F59E0B" },
   { id:"invoice",     label:"Invoices",         icon:"FileText",      color:"#3B9EFF" },
-  { id:"estimate",    label:"Estimates",        icon:"BarChart2",     color:"#64748B" },
+  { id:"estimate",    label:"Estimates",        icon:"BarChart2",     color:"#F97316" },
   { id:"requisition", label:"Requisitions",     icon:"FilePen",       color:"#A78BFA" },
   { id:"receipt",     label:"Receipts",         icon:"Receipt",       color:"#10B981" },
 ];
 
-export default function DocumentCenter({ vertId }:{vertId:string}) {
+export default function DocumentCenter({ vertId, onNewEstimate, initialTab, extraDocs }:{vertId:string; onNewEstimate?:()=>void; initialTab?:string; extraDocs?:DocRecord[]}) {
   const vert = VERTICAL_CONFIG[vertId];
   const P = vert?.color||"#3B9EFF";
-  const [tab, setTab]       = useState("po");
+  const [tab, setTab]       = useState(initialTab ?? "po");
   const [view, setView]     = useState<"list"|"detail"|"create">("list");
-  const [docs, setDocs]     = useState<DocRecord[]>(SAMPLE_DOCS);
+  const [docs, setDocs]     = useState<DocRecord[]>(()=>[...SAMPLE_DOCS, ...(extraDocs||[])]);
   const [active, setActive] = useState<DocRecord|null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
@@ -116,6 +116,46 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
     setDocs(ds=>[...ds.map(x=>x.id===d.id?{...x,status:"converted_to_po"}:x), po]);
     setTab("po"); setView("list");
   };
+  const TEMPLATE_PREFILL: Record<string, Partial<DocRecord>> = {
+    // ── Estimates ─────────────────────────────────────────────────────────────
+    "est-construction": { title:"Commercial Build-Out Estimate", contact:"James Rivera", company:"Rivera Development", email:"j.rivera@riveradev.com", lines:[{id:"l1",description:"Demo & site prep",qty:1,unit:"job",price:3200},{id:"l2",description:"Framing — steel stud",qty:2400,unit:"sqft",price:4.50},{id:"l3",description:"Drywall & finishing",qty:2400,unit:"sqft",price:3.80},{id:"l4",description:"Electrical — 20 circuits",qty:20,unit:"circuits",price:380},{id:"l5",description:"Paint — 2 coats",qty:2400,unit:"sqft",price:1.90},{id:"l6",description:"Project management",qty:1,unit:"job",price:4800}], tax:7 },
+    "est-roofing":      { title:"Full Roof Replacement Estimate", contact:"Karen Walsh", company:"Walsh Properties", email:"karen@walshprop.com", lines:[{id:"l1",description:"Tear-off & disposal — 28 sq",qty:28,unit:"sq",price:95},{id:"l2",description:"Synthetic underlayment",qty:6,unit:"rolls",price:145},{id:"l3",description:"Architectural shingles — 30yr",qty:28,unit:"sq",price:260},{id:"l4",description:"Ridge cap & hip shingles",qty:4,unit:"bundles",price:58},{id:"l5",description:"Flashing replacement",qty:1,unit:"job",price:620},{id:"l6",description:"Labor & cleanup",qty:1,unit:"job",price:1800}], tax:7 },
+    "est-it":           { title:"IT Infrastructure Estimate", contact:"David Kim", company:"Nexus Consulting Group", email:"d.kim@nexuscg.com", lines:[{id:"l1",description:"Network infrastructure — design & install",qty:1,unit:"project",price:8500},{id:"l2",description:"Cloud migration — Azure setup",qty:1,unit:"project",price:6200},{id:"l3",description:"Microsoft 365 licenses (20 users)",qty:20,unit:"users/yr",price:264},{id:"l4",description:"Security audit & hardening",qty:1,unit:"project",price:3400},{id:"l5",description:"Managed IT support — 12 months",qty:12,unit:"months",price:890}], tax:0 },
+    "est-professional": { title:"Strategy Consulting Engagement", contact:"Amanda Torres", company:"Torres Capital Advisors", email:"a.torres@torresca.com", lines:[{id:"l1",description:"Discovery & assessment — 3 sessions",qty:3,unit:"sessions",price:2400},{id:"l2",description:"Strategic plan development",qty:1,unit:"deliverable",price:7500},{id:"l3",description:"Implementation roadmap",qty:1,unit:"deliverable",price:4200},{id:"l4",description:"Monthly advisory retainer",qty:6,unit:"months",price:3500}], tax:0 },
+    "est-manufacturing":{ title:"Custom Fabrication Job Estimate", contact:"Greg Harmon", company:"Harmon Industrial Supply", email:"g.harmon@harmonind.com", lines:[{id:"l1",description:"Raw steel — A36 plate (0.5\")",qty:480,unit:"lbs",price:1.85},{id:"l2",description:"CNC plasma cutting",qty:16,unit:"hrs",price:145},{id:"l3",description:"MIG welding — certified",qty:24,unit:"hrs",price:125},{id:"l4",description:"Powder coat finish",qty:1,unit:"job",price:1200},{id:"l5",description:"Quality inspection & cert",qty:1,unit:"job",price:650}], tax:7 },
+    "est-healthcare":   { title:"Clinical Equipment & Setup Estimate", contact:"Dr. Marcus Jimenez", company:"Sunrise Dental Group", email:"m.jimenez@sunrisedental.com", lines:[{id:"l1",description:"Dental chair — A-dec 500 (x2)",qty:2,unit:"units",price:14800},{id:"l2",description:"Digital X-ray sensor system",qty:1,unit:"system",price:8900},{id:"l3",description:"Sterilization center — Midmark M11",qty:1,unit:"unit",price:3600},{id:"l4",description:"Installation & calibration",qty:1,unit:"job",price:2200},{id:"l5",description:"Staff training — 2 days",qty:2,unit:"days",price:1800}], tax:0 },
+    "est-general":      { title:"Project Estimate", contact:"Alex Morgan", company:"Morgan Enterprises", email:"a.morgan@morgan.co", lines:[{id:"l1",description:"Phase 1 — planning & design",qty:1,unit:"phase",price:3500},{id:"l2",description:"Phase 2 — implementation",qty:1,unit:"phase",price:8200},{id:"l3",description:"Phase 3 — testing & delivery",qty:1,unit:"phase",price:2800},{id:"l4",description:"Project management",qty:1,unit:"job",price:2400}], tax:0 },
+    // ── Purchase Orders ────────────────────────────────────────────────────────
+    "po-construction":  { title:"Lumber & Framing Materials", vendor:"Pacific Lumber Supply", vendorContact:"Mike Chen · mchen@paclumber.com", lines:[{id:"l1",description:"2×6 Studs — 92.5\" (bundle/84)",qty:6,unit:"bundles",price:280},{id:"l2",description:"OSB Sheathing 7/16\" — 4×8",qty:60,unit:"sheets",price:28},{id:"l3",description:"LVL Beam — 3.5\"×11.25\" 18ft",qty:4,unit:"pcs",price:320},{id:"l4",description:"Simpson Strong-Tie hangers (box/50)",qty:3,unit:"boxes",price:78}], tax:7 },
+    "po-tech":          { title:"Hardware & Licensing Order", vendor:"CDW Government", vendorContact:"orders@cdwg.com", lines:[{id:"l1",description:"Dell Latitude 5540 laptop",qty:5,unit:"units",price:1199},{id:"l2",description:"Microsoft 365 Business Premium",qty:25,unit:"licenses/yr",price:264},{id:"l3",description:"Cisco Meraki MX68 firewall",qty:1,unit:"unit",price:1850},{id:"l4",description:"WD My Cloud EX2 Ultra NAS",qty:1,unit:"unit",price:380}], tax:0 },
+    "po-general":       { title:"Office Supplies & Equipment", vendor:"Staples Business Advantage", vendorContact:"orders@staples.com", lines:[{id:"l1",description:"Copy paper — case (10 reams)",qty:4,unit:"cases",price:48},{id:"l2",description:"HP LaserJet toner — black",qty:4,unit:"cartridges",price:89},{id:"l3",description:"Ergonomic chairs — Steelcase Series 1",qty:3,unit:"units",price:720},{id:"l4",description:"Standing desk converter",qty:2,unit:"units",price:245}], tax:9.25 },
+    "po-healthcare":    { title:"Medical Supplies — Q3 Order", vendor:"Medline Industries", vendorContact:"healthcare@medline.com", lines:[{id:"l1",description:"Nitrile exam gloves — Medium (case/1000)",qty:5,unit:"cases",price:62},{id:"l2",description:"3-ply surgical masks (box/50)",qty:20,unit:"boxes",price:18},{id:"l3",description:"Sterile gauze pads 4×4 (box/200)",qty:10,unit:"boxes",price:24},{id:"l4",description:"Blood pressure cuffs — adult",qty:4,unit:"units",price:38}], tax:0 },
+    // ── Invoices ───────────────────────────────────────────────────────────────
+    "inv-construction": { title:"Foundation & Framing — Progress Billing", contact:"Robert Chen", company:"Chen Development LLC", email:"r.chen@chendevel.com", lines:[{id:"l1",description:"Foundation work — 100% complete",qty:1,unit:"milestone",price:28500},{id:"l2",description:"Framing — 75% complete",qty:0.75,unit:"milestone",price:48000},{id:"l3",description:"Rough plumbing — 50% complete",qty:0.5,unit:"milestone",price:14200}], tax:7 },
+    "inv-retainer":     { title:"June 2026 Retainer — Strategy & Advisory", contact:"Sarah Mitchell", company:"Apex Realty Group", email:"s.mitchell@apexrealty.com", lines:[{id:"l1",description:"Monthly advisory retainer — June 2026",qty:1,unit:"month",price:4500},{id:"l2",description:"Additional hours — 6hrs over retainer",qty:6,unit:"hrs",price:225}], tax:0 },
+    "inv-service":      { title:"IT Support & Managed Services — June", contact:"Lisa Chen", company:"Pacific Fabrication Co", email:"l.chen@pacfab.com", lines:[{id:"l1",description:"Managed IT support — 30 days",qty:1,unit:"month",price:1200},{id:"l2",description:"Server maintenance visit",qty:1,unit:"visit",price:350},{id:"l3",description:"Emergency after-hours call — 2hrs",qty:2,unit:"hrs",price:185}], tax:0 },
+    "inv-tm":           { title:"Time & Materials — June Field Work", contact:"Marcus Jimenez", company:"Sunrise Dental Group", email:"m.jimenez@sunrise.com", lines:[{id:"l1",description:"Lead technician — 32hrs",qty:32,unit:"hrs",price:95},{id:"l2",description:"Helper — 28hrs",qty:28,unit:"hrs",price:55},{id:"l3",description:"Materials & supplies",qty:1,unit:"job",price:840},{id:"l4",description:"Equipment rental — scaffolding 5 days",qty:5,unit:"days",price:120}], tax:7 },
+  };
+
+  const createFromSpecificTemplate = (t: DocTemplate) => {
+    const prefill = TEMPLATE_PREFILL[t.id] || {};
+    const today = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    const due   = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    const n: DocRecord = {
+      id:"doc"+Date.now(), type:t.type as any, templateId:t.id,
+      number: nextNum(t.type), title: prefill.title||t.name,
+      contact: prefill.contact||"", company: prefill.company||"", email: prefill.email||"",
+      vendor: prefill.vendor||"", vendorContact: prefill.vendorContact||"",
+      status:"draft", created:today, dueDate:due,
+      companyName:"KOVA Services LLC", companyAddress:"Tampa, FL",
+      lines: prefill.lines||[{id:"l1",description:"",qty:1,unit:"each",price:0}],
+      tax: prefill.tax??0, notes:t.defaultNotes, terms:t.defaultTerms,
+      accentColor:t.accentColor, font:"Inter",
+      requisitionReason:"", department:"", budgetCode:"",
+    };
+    setActive(n); setView("create");
+  };
+
   const createFromTemplate = (type:string) => {
     const n:DocRecord = {
       id:"doc"+Date.now(), type:type as any, templateId:"", number:nextNum(type), title:"",
@@ -129,6 +169,14 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
     };
     setActive(n); setView("create");
   };
+
+  const setF = (field: keyof DocRecord, val: any) => setActive(p => p ? { ...p, [field]: val } : p);
+  const updateLine = (id: string, field: keyof LineItem, val: any) =>
+    setActive(p => p ? { ...p, lines: p.lines.map(l => l.id === id ? { ...l, [field]: field === "qty" || field === "price" ? +val : val } : l) } : p);
+  const addLine = () =>
+    setActive(p => p ? { ...p, lines: [...p.lines, { id: "l" + Date.now(), description: "", qty: 1, unit: "each", price: 0 }] } : p);
+  const removeLine = (id: string) =>
+    setActive(p => p ? { ...p, lines: p.lines.filter(l => l.id !== id) } : p);
 
   // Business card scanner
   async function scanCard(file:File){
@@ -210,14 +258,18 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
           {/* Header */}
           <div style={{background:active.accentColor,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-            <div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:3}}>
+            <div style={{flex:1,marginRight:16}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:6}}>
                 {active.type==="requisition"?"Purchase Requisition":active.type.toUpperCase()}
               </div>
-              <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>{active.title||"Untitled"}</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",marginTop:2,fontFamily:"monospace"}}>{active.number}</div>
+              {isEdit
+                ? <input value={active.title} onChange={e=>setF("title",e.target.value)} placeholder="Document title…"
+                    style={{fontSize:16,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.35)",borderRadius:6,padding:"5px 10px",width:"100%",outline:"none",boxSizing:"border-box"}} />
+                : <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>{active.title||"Untitled"}</div>
+              }
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",marginTop:4,fontFamily:"monospace"}}>{active.number}</div>
             </div>
-            <div style={{textAlign:"right"}}>
+            <div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:22,fontWeight:700,color:"#fff"}}>{fv(total)}</div>
               {isInv && active.paidAmount ? <div style={{fontSize:11,color:"rgba(255,255,255,0.8)"}}>Paid: {fv(active.paidAmount)} · Due: {fv(remaining)}</div> : null}
               <div style={{padding:"3px 8px",borderRadius:99,background:"rgba(255,255,255,0.2)",display:"inline-block",marginTop:4}}>
@@ -319,12 +371,12 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div>
-          <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>Document Center</div>
+          <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>Documents</div>
           <div style={{fontSize:11,color:"#64748B",marginTop:1}}>PO · Invoices · Estimates · Requisitions · Receipts</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setShowScanner(true)} style={{padding:"7px 12px",background:P+"15",color:P,border:`1px solid ${P}44`,borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><IE emoji="📷" Icon={Camera} size={13} />Scan Card</button>
-          <button onClick={()=>createFromTemplate(tab)} style={{padding:"7px 14px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ New {typeConf?.label?.replace(/s$/,"")}</button>
+          <button onClick={()=>tab==="estimate"&&onNewEstimate?onNewEstimate():createFromTemplate(tab)} style={{padding:"7px 14px",background:"#0F172A",color:"#fff",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ New {typeConf?.label?.replace(/s$/,"")}</button>
         </div>
       </div>
 
@@ -356,7 +408,7 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
         <div style={{textAlign:"center",padding:"40px",border:"1px dashed #E2E8F0",borderRadius:10,color:"#94A3B8"}}>
           <div style={{marginBottom:8}}>{typeConf && <LkIcon m={DOC_ICON_MAP} n={typeConf.icon} size={28} color="#94A3B8" />}</div>
           <div style={{fontSize:13,fontWeight:600,color:"#64748B",marginBottom:4}}>No {typeConf?.label?.toLowerCase()} yet</div>
-          <button onClick={()=>createFromTemplate(tab)} style={{padding:"8px 18px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>Create First</button>
+          <button onClick={()=>tab==="estimate"&&onNewEstimate?onNewEstimate():createFromTemplate(tab)} style={{padding:"8px 18px",background:P,color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>Create First</button>
         </div>
       )}
       {filtered.map(d=>{
@@ -392,9 +444,10 @@ export default function DocumentCenter({ vertId }:{vertId:string}) {
           <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Industry Templates</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:6}}>
             {DOC_TEMPLATES.filter(t=>t.type===tab).slice(0,6).map(t=>(
-              <div key={t.id} onClick={()=>createFromTemplate(tab)} style={{background:"#fff",border:`1px solid ${t.accentColor}22`,borderTop:`2px solid ${t.accentColor}`,borderRadius:8,padding:"10px 11px",cursor:"pointer"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#0F172A",marginBottom:1}}>{t.name}</div>
-                <div style={{fontSize:9,color:t.accentColor,fontWeight:600}}>{t.industry}</div>
+              <div key={t.id} onClick={()=>createFromSpecificTemplate(t)} style={{background:"#fff",border:`1px solid ${t.accentColor}22`,borderTop:`3px solid ${t.accentColor}`,borderRadius:8,padding:"11px 12px",cursor:"pointer",transition:"box-shadow 0.15s"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#0F172A",marginBottom:3}}>{t.name}</div>
+                <div style={{fontSize:9,color:t.accentColor,fontWeight:600,marginBottom:4}}>{t.industry}</div>
+                <div style={{fontSize:9,color:"#94A3B8",lineHeight:1.4}}>{t.description.substring(0,52)}…</div>
               </div>
             ))}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { VERTICAL_CONFIG } from "@/lib/data";
-import { Send, Check, Sparkles } from "lucide-react";
+import { Send, Check, Sparkles, FileSpreadsheet, FileText, GitBranch } from "lucide-react";
 import { IE } from "@/lib/icon-mode";
 
 interface LineItem {
@@ -16,7 +16,17 @@ interface EstimateData {
 
 interface AgentMessage { role: "user" | "assistant"; text: string; }
 
-interface Props { vertId: string; }
+interface SavedEstimate {
+  title: string; contact: string; company: string; email: string;
+  lines: { id: string; description: string; qty: number; unit: string; price: number }[];
+  tax: number; notes: string; terms: string; total: number;
+}
+
+interface Props {
+  vertId: string;
+  onAddToPipeline?: (deal: { title: string; co: string; contact: string; val: number }) => void;
+  onSave?: (data: SavedEstimate) => void;
+}
 
 function fmtCurrency(n: number) {
   return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -126,7 +136,7 @@ const emptyEstimate = (): EstimateData => ({
   tax: 0, notes: "", terms: "This estimate is valid for 30 days. Final price subject to scope confirmation.",
 });
 
-export default function EstimateBuilder({ vertId }: Props) {
+export default function EstimateBuilder({ vertId, onAddToPipeline, onSave }: Props) {
   const vert = VERTICAL_CONFIG[vertId];
   const P = vert?.color || "#00C896";
 
@@ -139,7 +149,23 @@ export default function EstimateBuilder({ vertId }: Props) {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [exportToast, setExportToast] = useState<string|null>(null);
+  const [pipelineAdded, setPipelineAdded] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  const showExportToast = (label: string) => {
+    setExportToast(`${label} export — coming soon`);
+    setTimeout(() => setExportToast(null), 2800);
+  };
+
+  const addToPipeline = () => {
+    if (onAddToPipeline) {
+      onAddToPipeline({ title: est.title || "New Estimate", co: est.company || "—", contact: est.contact || "—", val: Math.round(total) });
+    } else {
+      setPipelineAdded(true);
+      setTimeout(() => setPipelineAdded(false), 2800);
+    }
+  };
 
   const sub = est.lines.reduce((a, l) => a + l.qty * l.price, 0);
   const contingencyAmt = sub * (est.contingency / 100);
@@ -189,14 +215,43 @@ export default function EstimateBuilder({ vertId }: Props) {
 
   const handleSave = () => {
     setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => {
+      setSaved(false);
+      setEst(emptyEstimate());
+      setView("builder");
+      setChat([{ role: "assistant", text: "Estimate saved! Ready to build a new one. Describe the project and I'll pre-fill the details." }]);
+      onSave?.({
+        title: est.title, contact: est.contact, company: est.company, email: est.email,
+        lines: est.lines.map(l => ({ id: l.id, description: l.description, qty: l.qty, unit: l.unit, price: l.price })),
+        tax: est.tax, notes: est.notes, terms: est.terms, total,
+      });
+    }, 2000);
   };
 
   if (view === "preview") return (
     <div>
+      {exportToast && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, background: "#0F172A", color: "#F1F5F9", padding: "10px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}>
+          {exportToast}
+        </div>
+      )}
+      {pipelineAdded && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, background: "#00C896", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 16px rgba(0,0,0,0.2)" }}>
+          ✅ Deal added to pipeline!
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <button onClick={() => setView("builder")} style={{ background: "none", border: "none", fontSize: 12, color: "#64748B", cursor: "pointer" }}>← Edit</button>
         <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => showExportToast("Excel")} style={{ padding: "7px 12px", background: "#F0FDF4", color: "#15803D", border: "1px solid #86EFAC", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <IE emoji="📊" Icon={FileSpreadsheet} size={12} />Export Excel
+          </button>
+          <button onClick={() => showExportToast("PDF")} style={{ padding: "7px 12px", background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <IE emoji="📄" Icon={FileText} size={12} />Export PDF
+          </button>
+          <button onClick={addToPipeline} style={{ padding: "7px 12px", background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <IE emoji="🔄" Icon={GitBranch} size={12} />Add to Pipeline
+          </button>
           <button onClick={handleSave} style={{ padding: "7px 14px", background: "#0F172A", color: "#fff", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             {saved ? <><IE emoji="✅" Icon={Check} size={12} /> Saved!</> : "Save Estimate"}
           </button>

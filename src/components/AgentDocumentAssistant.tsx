@@ -55,30 +55,140 @@ export default function AgentDocumentAssistant({ vertId, onClose }:{ vertId:stri
     setMsgs([{role:"assistant", content:greeting}]);
   };
 
+  const getScriptedReply = (text: string, dt: DocType): { message: string; quoteUpdate?: Partial<Doc> } => {
+    const lower = text.toLowerCase();
+    if (dt === "estimate" || dt === "quote") {
+      if (lower.includes("roof") || lower.includes("shingle") || lower.includes("gutter")) {
+        return {
+          message: "Perfect — I've pre-filled a roofing estimate with standard line items. Adjust quantities for actual job size, then hit Preview to review before sending.",
+          quoteUpdate: {
+            title: "Roof Replacement Estimate",
+            contact: "James Thompson",
+            company: "Thompson Properties",
+            intro: "We're pleased to provide this detailed estimate for your roofing project. All materials carry manufacturer warranties and labor is backed by our 5-year workmanship guarantee.",
+            scope: "Full tear-off & disposal · Install 30-year architectural shingles · Replace all flashing · Ridge cap & sealing · Final inspection and clean-up",
+            terms: "50% deposit required to mobilize. Balance due upon completion. Valid for 30 days.",
+            lines: [
+              {id:"l1",desc:"Tear-off & disposal",qty:1,unit:"job",price:2400},
+              {id:"l2",desc:"Architectural shingles — 30yr",qty:28,unit:"sq",price:255},
+              {id:"l3",desc:"Synthetic underlayment",qty:6,unit:"rolls",price:145},
+              {id:"l4",desc:"Flashing replacement",qty:1,unit:"job",price:780},
+              {id:"l5",desc:"Ridge cap & sealing",qty:1,unit:"job",price:420},
+            ],
+            tax: 7
+          }
+        };
+      }
+      if (lower.includes("kitchen") || lower.includes("remodel") || lower.includes("renovate")) {
+        return {
+          message: "Kitchen remodel — loaded line items from demo to finish. Adjust sqft and unit counts to match the actual job scope.",
+          quoteUpdate: {
+            title: "Kitchen Remodel Estimate",
+            contact: "Maria Garcia",
+            intro: "Full kitchen remodel including demo, cabinets, countertops, plumbing, and electrical. Price reflects mid-grade materials.",
+            scope: "Demo existing kitchen · Shaker cabinets · Quartz countertops · Plumbing rough-in · Electrical — 4 circuits · Tile backsplash · Finish labor",
+            terms: "50% deposit. 25% at rough-in. 25% at completion.",
+            lines: [
+              {id:"l1",desc:"Demo — existing kitchen",qty:1,unit:"job",price:1800},
+              {id:"l2",desc:"Cabinets — shaker style",qty:12,unit:"units",price:420},
+              {id:"l3",desc:"Countertops — quartz",qty:42,unit:"sqft",price:85},
+              {id:"l4",desc:"Plumbing rough-in",qty:1,unit:"job",price:2200},
+              {id:"l5",desc:"Electrical — 4 circuits",qty:4,unit:"circuits",price:380},
+              {id:"l6",desc:"Labor — finish work",qty:40,unit:"hrs",price:75},
+            ],
+            tax: 7
+          }
+        };
+      }
+      if (lower.includes("hvac") || lower.includes("dental") || lower.includes("medical") || lower.includes("service")) {
+        return {
+          message: "Commercial service estimate ready. Adjust unit counts based on your facility size and scope.",
+          quoteUpdate: {
+            title: "HVAC Service & Maintenance Estimate",
+            contact: "Lisa Greenfield",
+            company: "Greenfield Dental Group",
+            intro: "Comprehensive HVAC service estimate covering diagnostics, parts, and labor for your commercial facility.",
+            scope: "Full system diagnostics · Filter replacement · Coil cleaning · Refrigerant top-off · Labor",
+            terms: "Net 30. 90-day parts & labor warranty.",
+            lines: [
+              {id:"l1",desc:"System diagnostic — commercial",qty:1,unit:"visit",price:175},
+              {id:"l2",desc:"Filter replacement (all units)",qty:6,unit:"units",price:48},
+              {id:"l3",desc:"Coil cleaning",qty:2,unit:"units",price:280},
+              {id:"l4",desc:"Labor — 4 hours",qty:4,unit:"hrs",price:95},
+            ],
+            tax: 7
+          }
+        };
+      }
+      if (lower.includes("it") || lower.includes("software") || lower.includes("tech") || lower.includes("web")) {
+        return {
+          message: "IT project estimate loaded. Discovery, development, and QA are pre-filled — update hours to match your SOW.",
+          quoteUpdate: {
+            title: "Software Development Estimate",
+            contact: "David Park",
+            intro: "End-to-end development estimate including discovery, build, testing, and launch support.",
+            scope: "Discovery & requirements · UI/UX design · Frontend development · Backend API · QA & testing · Launch support",
+            terms: "50% upfront. Remaining billed at milestones. Net 15.",
+            lines: [
+              {id:"l1",desc:"Discovery & requirements",qty:8,unit:"hrs",price:150},
+              {id:"l2",desc:"UI/UX design",qty:16,unit:"hrs",price:125},
+              {id:"l3",desc:"Frontend development",qty:40,unit:"hrs",price:140},
+              {id:"l4",desc:"Backend API",qty:32,unit:"hrs",price:155},
+              {id:"l5",desc:"QA & testing",qty:12,unit:"hrs",price:110},
+            ],
+            tax: 0
+          }
+        };
+      }
+      return {
+        message: "Got it — I've set up a project template. Describe the scope in more detail and I'll refine the line items, or edit them directly on the left.",
+        quoteUpdate: {
+          title: text.length > 45 ? text.substring(0, 45) + "…" : text,
+          intro: "We're pleased to provide this estimate for your project. All pricing reflects current market rates.",
+          scope: "Describe scope here · Add specific line items as needed",
+          terms: "50% deposit required. Balance due on completion. Valid 30 days.",
+          lines: [
+            {id:"l1",desc:"Labor",qty:1,unit:"job",price:0},
+            {id:"l2",desc:"Materials",qty:1,unit:"lot",price:0},
+          ],
+          tax: 0
+        }
+      };
+    }
+    if (dt === "invoice") {
+      return {
+        message: "Invoice pre-filled. Confirm the client name and amounts, then send directly from the preview.",
+        quoteUpdate: {
+          title: "Invoice — " + new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),
+          contact: text.length > 3 ? text : "Client Name",
+          intro: "Thank you for your business. Please find your invoice details below.",
+          terms: "Net 30. Late fee 1.5%/month after due date.",
+          lines: [
+            {id:"l1",desc:"Professional services",qty:1,unit:"job",price:2500},
+          ],
+          tax: 7
+        }
+      };
+    }
+    return { message: "Got it. Tell me more about the project scope and I'll build out the line items." };
+  };
+
   const send = async(text:string) => {
     if(!text.trim()||loading) return;
     const userMsg: Msg = {role:"user", content:text};
-    const newMsgs = [...msgs, userMsg];
-    setMsgs(newMsgs); setInput(""); setLoading(true);
-    try {
-      const res = await fetch("/api/quote-agent",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ messages:newMsgs, currentQuote:doc, docType, vertical:vert.label }),
-      });
-      const data = await res.json();
-      if(data.message){
-        setMsgs(p=>[...p,{role:"assistant",content:data.message}]);
-        if(data.quoteUpdate){
-          setDoc(d=>({...d,...data.quoteUpdate,
-            lines: data.quoteUpdate.lines?.length ? data.quoteUpdate.lines.map((l:any)=>({id:l.id||"l"+Date.now(),desc:l.desc,qty:l.qty||1,unit:l.unit||"job",price:l.price||0})) : d.lines
-          }));
-        }
+    setMsgs(p=>[...p,userMsg]); setInput(""); setLoading(true);
+    const reply = getScriptedReply(text, docType);
+    setTimeout(() => {
+      setMsgs(p=>[...p,{role:"assistant",content:reply.message}]);
+      if(reply.quoteUpdate){
+        setDoc(d=>({...d,...reply.quoteUpdate,
+          lines: (reply.quoteUpdate as any).lines?.length
+            ? (reply.quoteUpdate as any).lines.map((l:any)=>({id:l.id||"l"+Date.now(),desc:l.desc,qty:l.qty||1,unit:l.unit||"job",price:l.price||0}))
+            : d.lines
+        }));
       }
-    } catch {
-      setMsgs(p=>[...p,{role:"assistant",content:"Connection error — check your API key in Vercel."}]);
-    }
-    setLoading(false);
+      setLoading(false);
+    }, 900 + Math.random() * 600);
   };
 
   const sub   = doc.lines.reduce((a,l)=>a+l.qty*l.price,0);
