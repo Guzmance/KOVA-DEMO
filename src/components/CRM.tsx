@@ -17,6 +17,7 @@ import ContactDetail from "@/components/ContactDetail";
 import MapView from "@/components/MapView";
 import AgentDocumentAssistant from "@/components/AgentDocumentAssistant";
 import FinancialHub from "@/components/FinancialHub";
+import PipelineViz from "@/components/PipelineViz";
 import CardScanModal from "@/components/CardScanModal";
 import EstimateBuilder from "@/components/EstimateBuilder";
 import { Button } from "@/components/ui/button";
@@ -1165,14 +1166,14 @@ export default function CRM() {
           <div style={{width:27,height:27,borderRadius:"50%",background:P+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:P,cursor:"pointer"}}>DU</div>
         </div>
 
-        <div style={{flex:1,overflowY:"auto",padding:14}} onClick={()=>setVertOpen(false)}>
+        <div style={{flex:1,overflowY:"auto",padding:14,position:"relative"}} onClick={()=>setVertOpen(false)}>
           {view==="dashboard"  && renderDashboard()}
           {view==="companies"  && renderCompanies()}
           {view==="deals"      && renderDeals()}
           {view==="lists"      && renderLists()}
           {view==="reports"    && renderReports()}
           {view==="activity"   && renderActivity()}
-          {view==="pipeline"   && renderPipeline()}
+          {view==="pipeline"   && <div style={{position:"absolute",inset:0,overflow:"hidden"}}><PipelineViz /></div>}
           {view==="ask"        && renderAsk()}
           {showDocAgent && (
           <div onClick={()=>setShowDocAgent(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
